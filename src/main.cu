@@ -94,7 +94,7 @@ int main (int argc, char** argv){
 	
 	int gpuBlockTotalX = matSrc.cols / strideX;
 	int gpuBlockTotalY = matSrc.rows / strideY;
-	blocksPerGrid = dim3(gpuBlockTotalX-1, gpuBlockTotalY-1, 1);
+	blocksPerGrid = dim3(gpuBlockTotalX, gpuBlockTotalY, 1);
 	threadsPerBlock = dim3(imgBlockSizeX, imgBlockSizeY, 1);
 	
 	// host 2d histogram
@@ -108,7 +108,7 @@ int main (int argc, char** argv){
 	
 	// main show
 	printf("Running the real deal\n");
-	printf("blocks per grid = (%d, %d)\n", gpuBlockTotalX-1, gpuBlockTotalY-1);
+	printf("blocks per grid = (%d, %d)\n", gpuBlockTotalX, gpuBlockTotalY);
 	printf("threads per block = (%d, %d)\n", imgBlockSizeX, imgBlockSizeY);
 	
 	cudaPrintfInit();
