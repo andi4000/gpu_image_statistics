@@ -98,7 +98,8 @@ int main (int argc, char** argv){
 	threadsPerBlock = dim3(imgBlockSizeX, imgBlockSizeY, 1);
 	
 	// host 2d histogram
-	//unsigned int host_hist3[gpuBlockTotalX][gpuBlockTotalY][256] = {{{0}}};
+	//TODO: need to be initialized? {{{0}}} doesnt work
+	unsigned int host_hist3[gpuBlockTotalX][gpuBlockTotalY][256];
 	
 	// device 2d histogram
 	unsigned int *** dev_hist3;
@@ -107,6 +108,7 @@ int main (int argc, char** argv){
 	cudaMemset(dev_hist3, 0, size_hist3);
 	
 	// main show
+	printf("\n\n=============\n");
 	printf("Running the real deal\n");
 	printf("blocks per grid = (%d, %d)\n", gpuBlockTotalX-1, gpuBlockTotalY-1);
 	printf("threads per block = (%d, %d)\n", imgBlockSizeX, imgBlockSizeY);
@@ -117,7 +119,10 @@ int main (int argc, char** argv){
 	cudaPrintfEnd();
 	
 	// result processing
-	//cudaMemcpy(host_hist3, dev_hist3, size_hist3, cudaMemcpyDeviceToHost);
+	//TODO: result is 0s
+	cudaMemcpy(host_hist3, dev_hist3, size_hist3, cudaMemcpyDeviceToHost);
+	printf("histogram for block (0,0) from real deal\n");
+	processHistogram(host_hist3[0][0], 256);
 	
 	/**
 	// testing cuprintf
