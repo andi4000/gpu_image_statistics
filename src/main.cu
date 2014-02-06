@@ -5,6 +5,7 @@
  * - cpp and h compiled with g++, and nvcc for cu files
  * - how to separate compilation in cmake and then later link?
  * - implement same function in cpu, then compare
+ * - see if Thrust library can help
  * 
  * Specific:
  * - using unsigned int for histogram data yields 1MB of data, which most are useless

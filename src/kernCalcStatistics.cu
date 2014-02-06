@@ -10,6 +10,7 @@ void kernCalcStatistics(
 	// nothing at the moment
 }
 
+//TODO: is sorting necessary?
 __device__
 void sortHistogram()
 {
