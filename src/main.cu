@@ -3,6 +3,16 @@
  * - need to split this into cpp, h, cu
  * - cpp and h compiled with g++, and nvcc for cu files
  * - how to separate compilation in cmake and then later link?
+ * - implement same function in cpu, then compare
+ * 
+ * Needed features:
+ * - mean
+ * - min
+ * - max
+ * - variance
+ * - kurtosis
+ * - skewness
+ * - central moment 1st to 5th order
  * 
  */
 #include <cstdio>
@@ -12,6 +22,7 @@
 
 #include "kernCalcCornerBlockHist.cu"
 #include "kernCalcBlockHist.cu"
+#include "kernCalcStatistics.cu"
 
 using namespace std;
 using namespace cv;
@@ -32,6 +43,7 @@ void processHistogram(unsigned int * hist, int max, bool show=false){
 	printf("n = %d\n", n);
 	printf("mean = %.5f\n", mean);
 }
+
 void processPseudoHistogram(unsigned int * hist, int dimx, int dimy, int dimz, int pitch, int blockX, int blockY, bool show=false){
 	float mean = 0;
 	float sum = 0;
@@ -78,8 +90,8 @@ int main (int argc, char** argv){
 	}
 	
 	// which block to show result for testing purpose
-	int tmp_whichBlockX = 12;
-	int tmp_whichBlockY = 21; // referring to gpu block 0-30
+	int tmp_whichBlockX = 30;
+	int tmp_whichBlockY = 30; // referring to gpu block 0-30
 	
 	// block sizes
 	int imgBlockSizeX = 32, imgBlockSizeY = 32;
@@ -94,6 +106,8 @@ int main (int argc, char** argv){
 	// device image
 	unsigned char * dev_image;
 	size_t size = matSrc.rows * matSrc.cols * sizeof(unsigned char);
+	
+	// wrap with timer
 	cudaMalloc(&dev_image, size);
 	cudaMemcpy(dev_image, host_image, size, cudaMemcpyHostToDevice);
 	
@@ -102,6 +116,7 @@ int main (int argc, char** argv){
 	size_t size_hist = 256 * sizeof(unsigned int);
 	cudaMalloc(&dev_hist, size_hist);
 	cudaMemset(dev_hist, 0, size_hist);
+	// timer until here
 	
 	// cuda grid and thread
 	dim3 blocksPerGrid = dim3(1,1,1);
@@ -109,7 +124,7 @@ int main (int argc, char** argv){
 	
 	// cuda timers
 	cudaEvent_t start, stop;
-	float elapsedTime;
+	float time_kernel;
 	cudaEventCreate(&start);
 	cudaEventCreate(&stop);
 	
@@ -120,10 +135,10 @@ int main (int argc, char** argv){
 	cudaEventRecord(stop, 0);
 	cudaEventSynchronize(stop);
 	
-	cudaEventElapsedTime(&elapsedTime, start, stop);
-	printf("GPU Histogram took %.5f ms\n", elapsedTime);
+	cudaEventElapsedTime(&time_kernel, start, stop);
+	printf("GPU Histogram took %.5f ms\n", time_kernel);
 	
-	// processing result
+	// processing result, TODO: timer
 	cudaMemcpy(host_hist, dev_hist, size_hist, cudaMemcpyDeviceToHost);
 	printf("Histogram from GPU, result from block (%d,%d)\n", tmp_whichBlockX, tmp_whichBlockY);
 	processHistogram(host_hist, 256);
@@ -154,14 +169,19 @@ int main (int argc, char** argv){
 	printf("blocks per grid = (%d, %d)\n", gpuBlockTotalX-1, gpuBlockTotalY-1);
 	printf("threads per block = (%d, %d)\n", imgBlockSizeX, imgBlockSizeY);
 	
+	// timer begin
 	cudaEventRecord(start,0);
+	
+	
 	kernCalcBlockHist<<<blocksPerGrid, threadsPerBlock>>>(dev_image, matSrc.rows, matSrc.cols, strideX, strideY, dev_hist2, dev_hist2_pitch);
+	
+	// timer end
 	cudaEventRecord(stop,0);
 	cudaEventSynchronize(stop);
 	
 	// print out time
-	cudaEventElapsedTime(&elapsedTime, start, stop);
-	printf("Whole image GPU histogram took %.5f ms\n", elapsedTime);
+	cudaEventElapsedTime(&time_kernel, start, stop);
+	printf("Whole image GPU histogram took %.5f ms\n", time_kernel);
 
 	// testing result
 	cudaMemcpy(host_hist2, dev_hist2, size_hist2, cudaMemcpyDeviceToHost);
