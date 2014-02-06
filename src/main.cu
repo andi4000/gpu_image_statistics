@@ -32,6 +32,40 @@ void processHistogram(unsigned int * hist, int max, bool show=false){
 	printf("n = %d\n", n);
 	printf("mean = %.5f\n", mean);
 }
+void processPseudoHistogram(unsigned int * hist, int dimx, int dimy, int dimz, int pitch, int blockX, int blockY, bool show=false){
+	float mean = 0;
+	float sum = 0;
+	int n = 0;
+
+	int idx;
+	for (int i = 0; i < dimz; i++){
+		idx = pitch * (dimx * blockY + blockX) + i;
+		if (show)
+			printf("%d\t%d\n", i, hist[idx]);
+		sum += i * hist[idx];
+		n += hist[idx];
+	}
+	
+	/**
+	// loop through all elements is not necessary
+	for (int k = blockX; k < dimx; k++){
+		for (int j = blockY; j < dimy; j++){
+			for (int i = 0; i < dimz; i++){
+				idx = pitch * (dimx * j + k) + i;
+				if (show)
+					printf("%d\t%d\n", i, hist[idx]);
+				sum += i * hist[idx];
+				n += hist[i];
+			}
+		}
+	}
+	*/
+	
+	mean = sum / (float)n;
+	printf("sum = %f\n", sum);
+	printf("n = %d\n", n);
+	printf("mean = %.5f\n", mean);
+}
 
 int main (int argc, char** argv){
 	Mat matSrc;
@@ -45,7 +79,7 @@ int main (int argc, char** argv){
 	
 	// block sizes
 	int imgBlockSizeX = 32, imgBlockSizeY = 32;
-	int beginX = 0, beginY = 0;
+	int beginX = 480, beginY = 480;
 	
 	// image data
 	unsigned char * host_image = matSrc.data;
@@ -59,8 +93,9 @@ int main (int argc, char** argv){
 	
 	// device histogram
 	unsigned int * dev_hist;
-	cudaMalloc(&dev_hist, 256 * sizeof(unsigned int));
-	cudaMemset(dev_hist, 0, 256 * sizeof(unsigned int));
+	size_t size_hist = 256 * sizeof(unsigned int);
+	cudaMalloc(&dev_hist, size_hist);
+	cudaMemset(dev_hist, 0, size_hist);
 	
 	// cuda grid and thread
 	dim3 blocksPerGrid = dim3(1,1,1);
@@ -72,6 +107,7 @@ int main (int argc, char** argv){
 	cudaEventCreate(&start);
 	cudaEventCreate(&stop);
 	
+	
 	// corner histogram
 	cudaEventRecord(start, 0);
 	kernCalcCornerBlockHist<<<blocksPerGrid, threadsPerBlock>>>(dev_image, matSrc.rows, matSrc.cols, beginX, beginY, dev_hist);
@@ -82,9 +118,10 @@ int main (int argc, char** argv){
 	printf("GPU Histogram took %.5f ms\n", elapsedTime);
 	
 	// processing result
-	cudaMemcpy(host_hist, dev_hist, 256 * sizeof(unsigned int), cudaMemcpyDeviceToHost);
+	cudaMemcpy(host_hist, dev_hist, size_hist, cudaMemcpyDeviceToHost);
 	printf("Histogram from GPU\n");
 	processHistogram(host_hist, 256);
+	
 	
 	
 	// =================== real deal =============================
@@ -97,15 +134,30 @@ int main (int argc, char** argv){
 	blocksPerGrid = dim3(gpuBlockTotalX-1, gpuBlockTotalY-1, 1);
 	threadsPerBlock = dim3(imgBlockSizeX, imgBlockSizeY, 1);
 	
-	// host 2d histogram
+	// host 3d histogram
 	//TODO: need to be initialized? {{{0}}} doesnt work
 	unsigned int host_hist3[gpuBlockTotalX][gpuBlockTotalY][256];
 	
-	// device 2d histogram
+	// device 3d histogram
 	unsigned int *** dev_hist3;
 	size_t size_hist3 = gpuBlockTotalX * gpuBlockTotalY * 256 * sizeof(unsigned int);
 	cudaMalloc(&dev_hist3, size_hist3);
 	cudaMemset(dev_hist3, 0, size_hist3);
+
+	// 2d histogram, pseudo multi array testing
+	unsigned int host_hist2[gpuBlockTotalX*gpuBlockTotalY*256];
+	unsigned int * dev_hist2;
+	int dev_hist2_pitch = 256;
+	size_t size_hist2 = gpuBlockTotalX * gpuBlockTotalY * 256 * sizeof(unsigned int);
+	cudaMalloc(&dev_hist2, size_hist2);
+	cudaMemset(dev_hist2, 0, size_hist2);
+
+	// 1d histogram, only for testing
+	unsigned int host_hist1[256] = {0};
+	unsigned int * dev_hist1;
+	size_t size_hist1 = 256 * sizeof(unsigned int);
+	cudaMalloc(&dev_hist1, size_hist1);
+	cudaMemset(dev_hist1, 0, size_hist1);
 	
 	// main show
 	printf("\n\n=============\n");
@@ -114,15 +166,21 @@ int main (int argc, char** argv){
 	printf("threads per block = (%d, %d)\n", imgBlockSizeX, imgBlockSizeY);
 	
 	cudaPrintfInit();
-	kernCalcBlockHist<<<blocksPerGrid, threadsPerBlock>>>(dev_image, matSrc.rows, matSrc.cols, strideX, strideY, dev_hist3);
+	//kernCalcBlockHist<<<blocksPerGrid, threadsPerBlock>>>(dev_image, matSrc.rows, matSrc.cols, strideX, strideY, dev_hist3);
+	//kernCalcBlockHist<<<blocksPerGrid, threadsPerBlock>>>(dev_image, matSrc.rows, matSrc.cols, strideX, strideY, dev_hist1);
+	kernCalcBlockHist<<<blocksPerGrid, threadsPerBlock>>>(dev_image, matSrc.rows, matSrc.cols, strideX, strideY, dev_hist2, dev_hist2_pitch);
 	cudaPrintfDisplay(stdout, true);
 	cudaPrintfEnd();
 	
 	// result processing
 	//TODO: result is 0s
-	cudaMemcpy(host_hist3, dev_hist3, size_hist3, cudaMemcpyDeviceToHost);
+	//cudaMemcpy(host_hist3, dev_hist3, size_hist3, cudaMemcpyDeviceToHost);
+	//cudaMemcpy(host_hist1, dev_hist1, size_hist1, cudaMemcpyDeviceToHost);
+	cudaMemcpy(host_hist2, dev_hist2, size_hist2, cudaMemcpyDeviceToHost);
 	printf("histogram for block (0,0) from real deal\n");
-	processHistogram(host_hist3[0][0], 256);
+	//processHistogram(host_hist3[0][0], 256);
+	//processHistogram(host_hist1, 256);
+	processPseudoHistogram(host_hist2, gpuBlockTotalX, gpuBlockTotalY, dev_hist2_pitch, 256, 30, 30);
 	
 	/**
 	// testing cuprintf
@@ -136,6 +194,8 @@ int main (int argc, char** argv){
 	// cleanup
 	cudaFree(dev_image);
 	cudaFree(dev_hist);
+	cudaFree(dev_hist3);
+	cudaFree(dev_hist1);
 	cudaDeviceReset();
 	return 0;
 }
