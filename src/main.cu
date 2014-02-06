@@ -1,9 +1,15 @@
 /**
  * //TODO:
+ * General:
  * - need to split this into cpp, h, cu
  * - cpp and h compiled with g++, and nvcc for cu files
  * - how to separate compilation in cmake and then later link?
  * - implement same function in cpu, then compare
+ * 
+ * Specific:
+ * - using unsigned int for histogram data yields 1MB of data, which most are useless
+ * - atomicAdd accepts only 32/64-bit word (int, float, unsigned int, etc)
+ * - possible solution atomicAdd for short (16-bit) --> https://devtalk.nvidia.com/default/topic/495219/cuda-programming-and-performance/how-to-use-atomiccas-to-implement-atomicadd-short-trouble-adapting-programming-guide-example/
  * 
  * Needed features:
  * - mean
@@ -15,6 +21,7 @@
  * - central moment 1st to 5th order
  * 
  */
+ 
 #include <cstdio>
 #include <cuda_runtime_api.h>
 #include <cuda.h>
