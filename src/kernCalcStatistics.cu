@@ -21,7 +21,8 @@ void kernCalcMeanMaxMin(
 )
 {
 	int hist_tid = pitch * (hist_blockDim.x * blockIdx.y + blockIdx.x);
-	//TODO: 
+	//TODO: copy one block of histogram to shared mem --> question: how?
+	// hint: memcpy http://stackoverflow.com/questions/10456728/is-there-an-equivalent-to-memcpy-that-works-inside-a-cuda-kernel
 	//__shared__ unsigned int blockHist[256] = hist_data[ hist_tid ];
 	
 	//TODO: use atomicMin and atomicMax, only for 256 elements

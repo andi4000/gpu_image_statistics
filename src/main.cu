@@ -219,9 +219,20 @@ int main (int argc, char** argv){
 	cudaPrintfEnd();
 	*/
 	
+	
+	// testing for memcpy concept inside kernel
+	int * test = new int[4];
+	test[0] = 0;
+	test[1] = 1;
+	test[2] = 2;
+	test[3] = 3;
+	
+	int aa[2];
+	memcpy(aa, test, 2*sizeof(int));
+	printf("\n aa[0] = %d\naa[1] = %d", aa[0], aa[1]);
+	
 	// cleanup
 	cudaFree(dev_image);
-//	cudaFree(dev_hist);
 	cudaFree(dev_hist2);
 	cudaDeviceReset();
 	return 0;
