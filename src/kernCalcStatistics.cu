@@ -10,6 +10,23 @@ void kernCalcStatistics(
 	// nothing at the moment
 }
 
+__global__
+void kernCalcMeanMaxMin(
+	unsigned int * hist_data,
+	dim3 hist_blockDim,
+	int pitch,
+	float * outMean,
+	unsigned int * outMax,
+	unsigned int * outMin
+)
+{
+	int hist_tid = pitch * (hist_blockDim.x * blockIdx.y + blockIdx.x);
+	//TODO: 
+	//__shared__ unsigned int blockHist[256] = hist_data[ hist_tid ];
+	
+	//TODO: use atomicMin and atomicMax, only for 256 elements
+}
+
 //TODO: is sorting necessary?
 __device__
 void sortHistogram()

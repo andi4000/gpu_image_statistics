@@ -35,6 +35,22 @@
 using namespace std;
 using namespace cv;
 
+void cpuCalcBlockHist(const Mat src, int blockSizeX, int blockSizeY, int beginX, int beginY, unsigned int * outHist){
+	unsigned char *input = (unsigned char*) src.data;
+	int count = 0;
+	int bin;
+	for (int j = beginY; j < beginY + blockSizeY; j++){
+		for (int i = beginX; i < beginX + blockSizeX; i++){
+			bin = input[src.rows * j + i];
+			//cout<<"index = "<<src.rows * j + i<<endl;
+			outHist[bin]++;
+			count++;
+		}
+	}
+	cout<<endl;
+	cout<<"count = "<<count<<endl;
+}
+
 void processHistogram(unsigned int * hist, int max, bool show=false){
 	float mean = 0;
 	float sum = 0;
@@ -171,35 +187,27 @@ int main (int argc, char** argv){
 
 	// testing result
 	printf("\nhistogram for block (%d,%d) from real deal\n", tmp_whichBlockX, tmp_whichBlockY);
-	processPseudoHistogram(host_hist2, gpuBlockTotalX, gpuBlockTotalY, dev_hist2_pitch, 256, tmp_whichBlockX, tmp_whichBlockY);
+	processPseudoHistogram(host_hist2, gpuBlockTotalX, gpuBlockTotalY, dev_hist2_pitch, 256, tmp_whichBlockX, tmp_whichBlockY, false);
 	
 	
 	// ================================ reference block calculation =================================
 	
 	blocksPerGrid = dim3(1,1,1);
 	threadsPerBlock = dim3(imgBlockSizeX, imgBlockSizeY, 1);
-
-	// device histogram
-	unsigned int * dev_hist;
-	size_t size_hist = 256 * sizeof(unsigned int);
-	cudaMalloc(&dev_hist, size_hist);
-	cudaMemset(dev_hist, 0, size_hist);
 	
 	printf("\n\n===========\n");
 	printf("reference calculation\n");
 	
 	// corner histogram
 	cudaEventRecord(start, 0);
-	kernCalcCornerBlockHist<<<blocksPerGrid, threadsPerBlock>>>(dev_image, matSrc.rows, matSrc.cols, beginX, beginY, dev_hist);
+	cpuCalcBlockHist(matSrc, imgBlockSizeX, imgBlockSizeY, beginX, beginY, host_hist);
 	cudaEventRecord(stop, 0);
 	cudaEventSynchronize(stop);
 	
 	cudaEventElapsedTime(&time_kernel, start, stop);
-	printf("GPU Histogram took %.5f ms\n", time_kernel);
+	printf("CPU Histogram took %.5f ms\n", time_kernel);
 	
-	// processing result, TODO: timer
-	cudaMemcpy(host_hist, dev_hist, size_hist, cudaMemcpyDeviceToHost);
-	printf("Histogram from GPU, result from block (%d,%d)\n", tmp_whichBlockX, tmp_whichBlockY);
+	printf("Histogram from CPU, result from block (%d,%d)\n", tmp_whichBlockX, tmp_whichBlockY);
 	processHistogram(host_hist, 256);
 	
 	/**
@@ -213,7 +221,7 @@ int main (int argc, char** argv){
 	
 	// cleanup
 	cudaFree(dev_image);
-	cudaFree(dev_hist);
+//	cudaFree(dev_hist);
 	cudaFree(dev_hist2);
 	cudaDeviceReset();
 	return 0;
