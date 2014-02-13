@@ -16,8 +16,24 @@ void cpuCalcBlockHist(const Mat src, int blockSizeX, int blockSizeY, int beginX,
 			count++;
 		}
 	}
-	cout<<endl;
-	cout<<"count = "<<count<<endl;
+	//printf("count = %d\n", count);
+}
+
+void cpuCalcHistAll(const Mat src, int blockSizeX, int blockSizeY, int strideX, int strideY, unsigned int * outHist, int hist_pitch){
+	int totalBlockX = src.cols / strideX;
+	int totalBlockY = src.rows / strideY;
+	
+	int beginX = 0, beginY = 0;
+	
+	for (int j = 0; j < totalBlockY; j++){
+		for (int i = 0; i < totalBlockX; i++){
+			beginY = j * strideY;
+			beginX = i * strideX;
+			int hist_id = hist_pitch * (totalBlockX * j + i);
+			cpuCalcBlockHist(src, blockSizeX, blockSizeY, beginX, beginY, (outHist +  hist_id));
+			//printf("Processing block (%d, %d)\n", i, j);
+		}
+	}
 }
 
 void processHistogram(unsigned int * hist, int max, bool show){

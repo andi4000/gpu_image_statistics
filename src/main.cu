@@ -116,11 +116,14 @@ int main (int argc, char** argv){
 	printf("Whole image GPU histogram took %.5f ms\n", time_kernel);
 
 	// testing result
-	printf("\nhistogram for block (%d,%d) from real deal\n", tmp_whichBlockX, tmp_whichBlockY);
+	printf("\nHistogram sample from GPU, block (%d,%d)\n", tmp_whichBlockX, tmp_whichBlockY);
 	processPseudoHistogram(host_hist2, gpuBlockTotalX, gpuBlockTotalY, dev_hist2_pitch, 256, tmp_whichBlockX, tmp_whichBlockY, false);
 	
 	
 	// ================================ reference block calculation =================================
+	
+	unsigned int host_histCpu[gpuBlockTotalX * gpuBlockTotalY * 256];
+	int host_histCpuPitch = 256;
 	
 	blocksPerGrid = dim3(1,1,1);
 	threadsPerBlock = dim3(imgBlockSizeX, imgBlockSizeY, 1);
@@ -130,15 +133,17 @@ int main (int argc, char** argv){
 	
 	// corner histogram
 	cudaEventRecord(start, 0);
-	cpuCalcBlockHist(matSrc, imgBlockSizeX, imgBlockSizeY, beginX, beginY, host_hist);
+	//cpuCalcBlockHist(matSrc, imgBlockSizeX, imgBlockSizeY, beginX, beginY, host_hist);
+	cpuCalcHistAll(matSrc, imgBlockSizeX, imgBlockSizeY, strideX, strideY, host_histCpu, host_histCpuPitch);
 	cudaEventRecord(stop, 0);
 	cudaEventSynchronize(stop);
 	
 	cudaEventElapsedTime(&time_kernel, start, stop);
-	printf("CPU Histogram took %.5f ms\n", time_kernel);
+	printf("Whole image CPU Histogram took %.5f ms\n", time_kernel);
 	
-	printf("Histogram from CPU, result from block (%d,%d)\n", tmp_whichBlockX, tmp_whichBlockY);
-	processHistogram(host_hist, 256);
+	printf("\nHistogram sample from CPU, block (%d,%d)\n", tmp_whichBlockX, tmp_whichBlockY);
+	//processHistogram(host_hist, 256);
+	processPseudoHistogram(host_histCpu, gpuBlockTotalX, gpuBlockTotalY, host_histCpuPitch, 256, tmp_whichBlockX, tmp_whichBlockY, false);
 	
 	/**
 	// testing cuprintf
@@ -159,7 +164,7 @@ int main (int argc, char** argv){
 	
 	int aa[2];
 	memcpy(aa, test, 2*sizeof(int));
-	printf("\n aa[0] = %d\naa[1] = %d", aa[0], aa[1]);
+	printf("\n aa[0] = %d\naa[1] = %d\n", aa[0], aa[1]);
 	
 	// cleanup
 	cudaFree(dev_image);
