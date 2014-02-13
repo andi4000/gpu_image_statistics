@@ -44,8 +44,8 @@ int main (int argc, char** argv){
 	}
 	
 	// which block to show result for testing purpose
-	int tmp_whichBlockX = 0;
-	int tmp_whichBlockY = 0; // referring to gpu block 0-30
+	int tmp_whichBlockX = 30;
+	int tmp_whichBlockY = 30; // referring to gpu block 0-30
 	
 	// block sizes
 	int imgBlockSizeX = 32, imgBlockSizeY = 32;
@@ -83,8 +83,7 @@ int main (int argc, char** argv){
 	size_t size_hist2 = gpuBlockTotalX * gpuBlockTotalY * 256 * sizeof(unsigned int);
 	
 	// main show
-	printf("=============\n");
-	printf("Running the real deal\n");
+	printf("============= GPU\n");
 	printf("blocks per grid = (%d, %d)\n", gpuBlockTotalX-1, gpuBlockTotalY-1);
 	printf("threads per block = (%d, %d)\n", imgBlockSizeX, imgBlockSizeY);
 	
@@ -114,21 +113,20 @@ int main (int argc, char** argv){
 	// testing result
 	printf("\nHistogram sample from GPU, block (%d,%d)\n", tmp_whichBlockX, tmp_whichBlockY);
 	processPseudoHistogram(host_hist2, gpuBlockTotalX, gpuBlockTotalY, dev_hist2_pitch, 256, tmp_whichBlockX, tmp_whichBlockY, false);
+
 	
+	// ================================ CPU Histogram =================================
 	
-	// ================================ reference block calculation =================================
-	
-	unsigned int host_histCpu[gpuBlockTotalX * gpuBlockTotalY * 256];
-	int host_histCpuPitch = 256;
+	unsigned int cpuHist[gpuBlockTotalX * gpuBlockTotalY * 256];
+	int cpuHistPitch = 256;
 	
 	blocksPerGrid = dim3(1,1,1);
 	threadsPerBlock = dim3(imgBlockSizeX, imgBlockSizeY, 1);
 	
-	printf("\n\n===========\n");
-	printf("reference calculation\n");
+	printf("============= CPU\n");
 	
 	cudaEventRecord(start, 0);
-	cpuCalcHistAll(matSrc, imgBlockSizeX, imgBlockSizeY, strideX, strideY, host_histCpu, host_histCpuPitch);
+	cpuCalcHistAll(matSrc, imgBlockSizeX, imgBlockSizeY, strideX, strideY, cpuHist, cpuHistPitch);
 	cudaEventRecord(stop, 0);
 	cudaEventSynchronize(stop);
 	
@@ -136,8 +134,8 @@ int main (int argc, char** argv){
 	printf("Whole image CPU Histogram took %.5f ms\n", time_kernel);
 	
 	printf("\nHistogram sample from CPU, block (%d,%d)\n", tmp_whichBlockX, tmp_whichBlockY);
-	processPseudoHistogram(host_histCpu, gpuBlockTotalX, gpuBlockTotalY, host_histCpuPitch, 256, tmp_whichBlockX, tmp_whichBlockY, false);
-	
+	processPseudoHistogram(cpuHist, gpuBlockTotalX, gpuBlockTotalY, cpuHistPitch, 256, tmp_whichBlockX, tmp_whichBlockY, false);
+
 	/**
 	// testing cuprintf
 	printf("testing cuprintf\n");
@@ -147,8 +145,29 @@ int main (int argc, char** argv){
 	cudaPrintfEnd();
 	*/
 	
+	// =============================== CPU mean median max ====================
+	
+	// histogram dimension, to process serialized 32x32 histogram
+	dim3 hist_blockDim = dim3(gpuBlockTotalX,gpuBlockTotalY,256);
+	
+	// mean, median, max, min
+	float cpuStatMean[gpuBlockTotalX*gpuBlockTotalY];
+	unsigned int cpuStatMedian[gpuBlockTotalX*gpuBlockTotalY];
+	unsigned int cpuStatMax[gpuBlockTotalX*gpuBlockTotalY];
+	unsigned int cpuStatMin[gpuBlockTotalX*gpuBlockTotalY];
+	int cpuStatStride = 32; //TODO: make this variable
+	
+	// calculating mean median max min
+	cpuCalcMeanMedianMaxMin(cpuHist, hist_blockDim, cpuHistPitch, cpuStatMean, cpuStatMedian, cpuStatMax, cpuStatMin);
+	
+	printf("\nCPU mean median max min calculation for block (%d, %d)\n", tmp_whichBlockX, tmp_whichBlockY);
+	printf("mean = %f\n", cpuStatMean[cpuStatStride*tmp_whichBlockY + tmp_whichBlockX]);
+	printf("median = %d\n", cpuStatMedian[cpuStatStride*tmp_whichBlockY + tmp_whichBlockX]);
+	printf("max = %d\n", cpuStatMax[cpuStatStride*tmp_whichBlockY + tmp_whichBlockX]);
+	printf("min = %d\n", cpuStatMin[cpuStatStride*tmp_whichBlockY + tmp_whichBlockX]);
 	
 	// testing for memcpy concept inside kernel
+	/**
 	int * test = new int[4];
 	test[0] = 0;
 	test[1] = 1;
@@ -158,6 +177,7 @@ int main (int argc, char** argv){
 	int aa[2];
 	memcpy(aa, test, 2*sizeof(int));
 	printf("\n aa[0] = %d\naa[1] = %d\n", aa[0], aa[1]);
+	*/
 	
 	// cleanup
 	cudaFree(dev_image);
