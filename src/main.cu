@@ -83,7 +83,7 @@ int main (int argc, char** argv){
 	size_t size_hist2 = gpuBlockTotalX * gpuBlockTotalY * 256 * sizeof(unsigned int);
 	
 	// main show
-	printf("============= GPU\n");
+	printf("\n============= GPU =============\n");
 	printf("blocks per grid = (%d, %d)\n", gpuBlockTotalX-1, gpuBlockTotalY-1);
 	printf("threads per block = (%d, %d)\n", imgBlockSizeX, imgBlockSizeY);
 	
@@ -112,6 +112,7 @@ int main (int argc, char** argv){
 
 	// testing result
 	printf("\nHistogram sample from GPU, block (%d,%d)\n", tmp_whichBlockX, tmp_whichBlockY);
+	//TODO: needed no more?
 	processPseudoHistogram(host_hist2, gpuBlockTotalX, gpuBlockTotalY, dev_hist2_pitch, 256, tmp_whichBlockX, tmp_whichBlockY, false);
 
 	
@@ -123,7 +124,7 @@ int main (int argc, char** argv){
 	blocksPerGrid = dim3(1,1,1);
 	threadsPerBlock = dim3(imgBlockSizeX, imgBlockSizeY, 1);
 	
-	printf("============= CPU\n");
+	printf("\n\n============= CPU =============\n");
 	
 	cudaEventRecord(start, 0);
 	cpuCalcHistAll(matSrc, imgBlockSizeX, imgBlockSizeY, strideX, strideY, cpuHist, cpuHistPitch);
@@ -150,7 +151,7 @@ int main (int argc, char** argv){
 	// histogram dimension, to process serialized 32x32 histogram
 	dim3 hist_blockDim = dim3(gpuBlockTotalX,gpuBlockTotalY,256);
 	
-	// mean, median, max, min
+	// mean, median, max, min, serialized array
 	float cpuStatMean[gpuBlockTotalX*gpuBlockTotalY];
 	unsigned int cpuStatMedian[gpuBlockTotalX*gpuBlockTotalY];
 	unsigned int cpuStatMax[gpuBlockTotalX*gpuBlockTotalY];
