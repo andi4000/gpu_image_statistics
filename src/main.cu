@@ -44,14 +44,11 @@ int main (int argc, char** argv){
 	}
 	
 	// which block to show result for testing purpose
-	int tmp_whichBlockX = 30;
-	int tmp_whichBlockY = 30; // referring to gpu block 0-30
+	int tmp_whichBlockX = 0;
+	int tmp_whichBlockY = 0; // referring to gpu block 0-30
 	
 	// block sizes
 	int imgBlockSizeX = 32, imgBlockSizeY = 32;
-	//int beginX = 480, beginY = 480;
-	int beginX = tmp_whichBlockX * 16;
-	int beginY = tmp_whichBlockY * 16;
 
 	// cuda grid and thread
 	dim3 blocksPerGrid;
@@ -65,7 +62,6 @@ int main (int argc, char** argv){
 	
 	// image data
 	unsigned char * host_image = matSrc.data;
-	unsigned int host_hist[256] = {0};
 	
 	// device image
 	unsigned char * dev_image;
@@ -131,9 +127,7 @@ int main (int argc, char** argv){
 	printf("\n\n===========\n");
 	printf("reference calculation\n");
 	
-	// corner histogram
 	cudaEventRecord(start, 0);
-	//cpuCalcBlockHist(matSrc, imgBlockSizeX, imgBlockSizeY, beginX, beginY, host_hist);
 	cpuCalcHistAll(matSrc, imgBlockSizeX, imgBlockSizeY, strideX, strideY, host_histCpu, host_histCpuPitch);
 	cudaEventRecord(stop, 0);
 	cudaEventSynchronize(stop);
@@ -142,7 +136,6 @@ int main (int argc, char** argv){
 	printf("Whole image CPU Histogram took %.5f ms\n", time_kernel);
 	
 	printf("\nHistogram sample from CPU, block (%d,%d)\n", tmp_whichBlockX, tmp_whichBlockY);
-	//processHistogram(host_hist, 256);
 	processPseudoHistogram(host_histCpu, gpuBlockTotalX, gpuBlockTotalY, host_histCpuPitch, 256, tmp_whichBlockX, tmp_whichBlockY, false);
 	
 	/**
