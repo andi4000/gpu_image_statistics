@@ -56,7 +56,7 @@ int main (int argc, char** argv){
 	
 	// cuda timers
 	cudaEvent_t start, stop;
-	float time_kernel;
+	float time_kernel, time_statCalc;
 	cudaEventCreate(&start);
 	cudaEventCreate(&stop);
 	
@@ -158,9 +158,15 @@ int main (int argc, char** argv){
 	int cpuStatStride = 32; //TODO: make this variable
 	
 	// calculating mean median max min
+	cudaEventRecord(start, 0);
 	cpuCalcMeanMedianMaxMin(cpuHist, hist_blockDim, cpuHistPitch, cpuStatMean, cpuStatMedian, cpuStatMax, cpuStatMin);
+	cudaEventRecord(stop, 0);
+	cudaEventSynchronize(stop);
 	
-	printf("\nCPU mean median max min calculation for block (%d, %d)\n", tmp_whichBlockX, tmp_whichBlockY);
+	cudaEventElapsedTime(&time_statCalc, start, stop);
+	
+	printf("\nCPU mean median max min calculation took %.5f ms\n", time_statCalc);
+	printf("for block (%d, %d)\n", tmp_whichBlockX, tmp_whichBlockY);
 	printf("mean = %f\n", cpuStatMean[cpuStatStride*tmp_whichBlockY + tmp_whichBlockX]);
 	printf("median = %d\n", cpuStatMedian[cpuStatStride*tmp_whichBlockY + tmp_whichBlockX]);
 	printf("max = %d\n", cpuStatMax[cpuStatStride*tmp_whichBlockY + tmp_whichBlockX]);
