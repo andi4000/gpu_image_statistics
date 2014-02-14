@@ -73,47 +73,6 @@ int main (int argc, char** argv){
 	// grids and thread for cuda
 	int gpuBlockTotalX = matSrc.cols / strideX;
 	int gpuBlockTotalY = matSrc.rows / strideY;
-	blocksPerGrid = dim3(gpuBlockTotalX-1, gpuBlockTotalY-1, 1);
-	threadsPerBlock = dim3(imgBlockSizeX, imgBlockSizeY, 1);
-	
-	// histogram, pseudo multi-dimension array
-	unsigned int host_hist2[gpuBlockTotalX*gpuBlockTotalY*256];
-	unsigned int * dev_hist2;
-	int dev_hist2_pitch = 256;
-	size_t size_hist2 = gpuBlockTotalX * gpuBlockTotalY * 256 * sizeof(unsigned int);
-	
-	// main show
-	printf("\n============= GPU =============\n");
-	printf("blocks per grid = (%d, %d)\n", gpuBlockTotalX-1, gpuBlockTotalY-1);
-	printf("threads per block = (%d, %d)\n", imgBlockSizeX, imgBlockSizeY);
-	
-	// timer begin
-	cudaEventRecord(start,0);
-	
-	// allocating and copying memory in device
-	cudaMalloc(&dev_image, size);
-	cudaMemcpy(dev_image, host_image, size, cudaMemcpyHostToDevice);	
-	cudaMalloc(&dev_hist2, size_hist2);
-	cudaMemset(dev_hist2, 0, size_hist2);
-	
-	// kernel call
-	kernCalcBlockHist<<<blocksPerGrid, threadsPerBlock>>>(dev_image, matSrc.rows, matSrc.cols, strideX, strideY, dev_hist2, dev_hist2_pitch);
-
-	// copy the result back
-	cudaMemcpy(host_hist2, dev_hist2, size_hist2, cudaMemcpyDeviceToHost);
-	
-	// timer end
-	cudaEventRecord(stop,0);
-	cudaEventSynchronize(stop);
-	
-	// print out time
-	cudaEventElapsedTime(&time_kernel, start, stop);
-	printf("Whole image GPU histogram took %.5f ms\n", time_kernel);
-
-	// testing result
-	printf("\nHistogram sample from GPU, block (%d,%d)\n", tmp_whichBlockX, tmp_whichBlockY);
-	//TODO: needed no more?
-	processPseudoHistogram(host_hist2, gpuBlockTotalX, gpuBlockTotalY, dev_hist2_pitch, 256, tmp_whichBlockX, tmp_whichBlockY, false);
 
 	
 	// ================================ CPU Histogram =================================
@@ -124,7 +83,7 @@ int main (int argc, char** argv){
 	blocksPerGrid = dim3(1,1,1);
 	threadsPerBlock = dim3(imgBlockSizeX, imgBlockSizeY, 1);
 	
-	printf("\n\n============= CPU =============\n");
+	printf("\n============= CPU =============\n");
 	
 	cudaEventRecord(start, 0);
 	cpuCalcHistAll(matSrc, imgBlockSizeX, imgBlockSizeY, strideX, strideY, cpuHist, cpuHistPitch);
@@ -172,6 +131,53 @@ int main (int argc, char** argv){
 	printf("median = %d\n", cpuStatMedian[cpuStatStride*tmp_whichBlockY + tmp_whichBlockX]);
 	printf("max = %d\n", cpuStatMax[cpuStatStride*tmp_whichBlockY + tmp_whichBlockX]);
 	printf("min = %d\n", cpuStatMin[cpuStatStride*tmp_whichBlockY + tmp_whichBlockX]);
+	
+
+	// ================================ GPU Histogram =================================
+	
+	// block sizes
+	blocksPerGrid = dim3(gpuBlockTotalX-1, gpuBlockTotalY-1, 1);
+	threadsPerBlock = dim3(imgBlockSizeX, imgBlockSizeY, 1);
+	
+	// histogram, pseudo multi-dimension array
+	unsigned int host_hist2[gpuBlockTotalX*gpuBlockTotalY*256];
+	unsigned int * dev_hist2;
+	int dev_hist2_pitch = 256;
+	size_t size_hist2 = gpuBlockTotalX * gpuBlockTotalY * 256 * sizeof(unsigned int);
+	
+	// main show
+	printf("\n\n============= GPU =============\n");
+	printf("blocks per grid = (%d, %d)\n", gpuBlockTotalX-1, gpuBlockTotalY-1);
+	printf("threads per block = (%d, %d)\n", imgBlockSizeX, imgBlockSizeY);
+	
+	// timer begin
+	cudaEventRecord(start,0);
+	
+	// allocating and copying memory in device
+	cudaMalloc(&dev_image, size);
+	cudaMemcpy(dev_image, host_image, size, cudaMemcpyHostToDevice);	
+	cudaMalloc(&dev_hist2, size_hist2);
+	cudaMemset(dev_hist2, 0, size_hist2);
+	
+	// kernel call
+	kernCalcBlockHist<<<blocksPerGrid, threadsPerBlock>>>(dev_image, matSrc.rows, matSrc.cols, strideX, strideY, dev_hist2, dev_hist2_pitch);
+
+	// copy the result back
+	cudaMemcpy(host_hist2, dev_hist2, size_hist2, cudaMemcpyDeviceToHost);
+	
+	// timer end
+	cudaEventRecord(stop,0);
+	cudaEventSynchronize(stop);
+	
+	// print out time
+	cudaEventElapsedTime(&time_kernel, start, stop);
+	printf("Whole image GPU histogram took %.5f ms\n", time_kernel);
+
+	// testing result
+	printf("\nHistogram sample from GPU, block (%d,%d)\n", tmp_whichBlockX, tmp_whichBlockY);
+	//TODO: needed no more?
+	processPseudoHistogram(host_hist2, gpuBlockTotalX, gpuBlockTotalY, dev_hist2_pitch, 256, tmp_whichBlockX, tmp_whichBlockY, false);
+
 	
 	// testing for memcpy concept inside kernel
 	/**
