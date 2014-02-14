@@ -33,6 +33,15 @@
 using namespace std;
 using namespace cv;
 
+// Ref: http://stackoverflow.com/questions/14038589/what-is-the-canonical-way-to-check-for-errors-using-the-cuda-runtime-api
+#define gpuErrChk(ans) { gpuAssert((ans), __FILE__, __LINE__); }
+inline void gpuAssert(cudaError_t code, char * file, int line, bool abort=true){
+	if (code != cudaSuccess){
+		fprintf(stderr, "GPU Assert: %s %s %d\n", cudaGetErrorString(code), file, line);
+		if (abort) exit(code);
+	}
+}
+
 int main (int argc, char** argv){
 	Mat matSrc;
 	
@@ -184,14 +193,14 @@ int main (int argc, char** argv){
 	// host variables
 	int statArraySize = gpuBlockTotalX*gpuBlockTotalY;
 	float host_statMean[statArraySize];
-	unsigned int host_statMedian[statArraySize];
+	//unsigned int host_statMedian[statArraySize];
 	unsigned int host_statMax[statArraySize];
 	unsigned int host_statMin[statArraySize];
 	int statArrayStride = 32; //TODO: make this variable
 	
 	// device variables
 	float * dev_statMean;
-	unsigned int * dev_statMedian;
+	//unsigned int * dev_statMedian;
 	unsigned int * dev_statMax;
 	unsigned int * dev_statMin;
 	
@@ -200,22 +209,23 @@ int main (int argc, char** argv){
 	
 	// device memory allocation
 	cudaMalloc(&dev_statMean, statArraySize * sizeof(float));
-	cudaMalloc(&dev_statMedian, statArraySize * sizeof(unsigned int));
+	//cudaMalloc(&dev_statMedian, statArraySize * sizeof(unsigned int));
 	cudaMalloc(&dev_statMax, statArraySize * sizeof(unsigned int));
 	cudaMalloc(&dev_statMin, statArraySize * sizeof(unsigned int));
 	
 	// set everything to zero
 	cudaMemset(dev_statMean, 0, statArraySize * sizeof(float));
-	cudaMemset(dev_statMedian, 0, statArraySize * sizeof(unsigned int));
+	//cudaMemset(dev_statMedian, 0, statArraySize * sizeof(unsigned int));
 	cudaMemset(dev_statMax, 0, statArraySize * sizeof(unsigned int));
 	cudaMemset(dev_statMin, 0, statArraySize * sizeof(unsigned int));
 	
 	// kernel call
-	kernCalcMeanMedianMaxMin<<<blocksPerGrid, dev_hist2_pitch>>>(dev_hist2, dev_hist2_pitch, dev_statMean, dev_statMedian, dev_statMax, dev_statMin);
+	//kernCalcMeanMedianMaxMin<<<blocksPerGrid, dev_hist2_pitch>>>(dev_hist2, dev_hist2_pitch, dev_statMean, dev_statMedian, dev_statMax, dev_statMin);
+	kernCalcMeanMedianMaxMin<<<blocksPerGrid, dev_hist2_pitch>>>(dev_hist2, dev_hist2_pitch, dev_statMean, dev_statMax, dev_statMin);
 	
 	// copy the results back to host
 	cudaMemcpy(host_statMean, dev_statMean, statArraySize * sizeof(float), cudaMemcpyDeviceToHost);
-	cudaMemcpy(host_statMedian, dev_statMedian, statArraySize * sizeof(unsigned int), cudaMemcpyDeviceToHost);
+	//cudaMemcpy(host_statMedian, dev_statMedian, statArraySize * sizeof(unsigned int), cudaMemcpyDeviceToHost);
 	cudaMemcpy(host_statMax, dev_statMax, statArraySize * sizeof(unsigned int), cudaMemcpyDeviceToHost);
 	cudaMemcpy(host_statMin, dev_statMin, statArraySize * sizeof(unsigned int), cudaMemcpyDeviceToHost);
 	
@@ -228,7 +238,7 @@ int main (int argc, char** argv){
 	printf("\nGPU mean max min calculation took %.2f ms\n", time_gpuStatCalc);
 	printf("for block (%d,%d)\n", tmp_whichBlockX, tmp_whichBlockY);
 	printf("mean = %f\n", host_statMean[statArrayStride * tmp_whichBlockY + tmp_whichBlockX]);
-	printf("median = %d\n", host_statMedian[statArrayStride * tmp_whichBlockY + tmp_whichBlockX]);
+	//printf("median = %d\n", host_statMedian[statArrayStride * tmp_whichBlockY + tmp_whichBlockX]);
 	printf("max = %d\n", host_statMax[statArrayStride * tmp_whichBlockY + tmp_whichBlockX]);
 	printf("min = %d\n", host_statMin[statArrayStride * tmp_whichBlockY + tmp_whichBlockX]);
 	*/
@@ -252,7 +262,7 @@ int main (int argc, char** argv){
 	// gpu histogram 
 	/**
 	cudaFree(dev_statMean);
-	cudaFree(dev_statMedian);
+	//cudaFree(dev_statMedian);
 	cudaFree(dev_statMax);
 	cudaFree(dev_statMin);
 	*/

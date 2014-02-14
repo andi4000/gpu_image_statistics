@@ -18,7 +18,7 @@ void kernCalcMeanMedianMaxMin(
 	/*dim3 hist_blockDim, */ // not sure if this is 31x31 or 32x32
 	int hist_pitch,
 	float * outMean,
-	unsigned int * outMedian,
+	/*unsigned int * outMedian,*/
 	unsigned int * outMax,
 	unsigned int * outMin
 )
@@ -57,7 +57,7 @@ void kernCalcMeanMedianMaxMin(
 }
 
 
-
+/**
 __device__
 unsigned int getMedian()
 {
@@ -91,3 +91,4 @@ float getMean(
 	// process the array
 	return mean;
 }
+*/
