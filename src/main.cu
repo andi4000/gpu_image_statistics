@@ -199,6 +199,7 @@ int main (int argc, char** argv){
 	int statArrayStride = 32; //TODO: make this variable
 	
 	// device variables
+	unsigned int * dev_hist2stat;
 	float * dev_statMean;
 	//unsigned int * dev_statMedian;
 	unsigned int * dev_statMax;
@@ -208,10 +209,14 @@ int main (int argc, char** argv){
 	cudaEventRecord(start, 0);
 	
 	// device memory allocation
+	gpuErrChk( cudaMalloc(&dev_hist2stat, size_hist2) );
 	gpuErrChk( cudaMalloc(&dev_statMean, statArraySize * sizeof(float)) );
 	//cudaMalloc(&dev_statMedian, statArraySize * sizeof(unsigned int));
 	gpuErrChk( cudaMalloc(&dev_statMax, statArraySize * sizeof(unsigned int)) );
 	gpuErrChk( cudaMalloc(&dev_statMin, statArraySize * sizeof(unsigned int)) );
+	
+	// copy old histogram to new
+	gpuErrChk( cudaMemcpy(dev_hist2stat, host_hist2, size_hist2, cudaMemcpyHostToDevice) );
 	
 	// set everything to zero
 	gpuErrChk( cudaMemset(dev_statMean, 0, statArraySize * sizeof(float)) );
@@ -221,7 +226,7 @@ int main (int argc, char** argv){
 	
 	// kernel call
 	//kernCalcMeanMedianMaxMin<<<blocksPerGrid, dev_hist2_pitch>>>(dev_hist2, dev_hist2_pitch, dev_statMean, dev_statMedian, dev_statMax, dev_statMin);
-	kernCalcMeanMedianMaxMin<<<blocksPerGrid, dev_hist2_pitch>>>(dev_hist2, dev_hist2_pitch, dev_statMean, dev_statMax, dev_statMin);
+	kernCalcMeanMedianMaxMin<<<blocksPerGrid, dev_hist2_pitch>>>(dev_hist2stat, dev_hist2_pitch, dev_statMean, dev_statMax, dev_statMin);
 	
 	gpuErrChk( cudaPeekAtLastError() );
 	gpuErrChk( cudaDeviceSynchronize() );
@@ -264,6 +269,7 @@ int main (int argc, char** argv){
 	
 	// gpu histogram 
 	
+	gpuErrChk( cudaFree(dev_hist2stat) );
 	gpuErrChk( cudaFree(dev_statMean) );
 	//cudaFree(dev_statMedian);
 	gpuErrChk( cudaFree(dev_statMax) );
