@@ -56,7 +56,7 @@ int main (int argc, char** argv){
 	
 	// cuda timers
 	cudaEvent_t start, stop;
-	float time_kernel, time_statCalc;
+	float time_cpuHist, time_gpuHist, time_cpuStatCalc, time_gpuStatCalc;
 	cudaEventCreate(&start);
 	cudaEventCreate(&stop);
 	
@@ -90,8 +90,8 @@ int main (int argc, char** argv){
 	cudaEventRecord(stop, 0);
 	cudaEventSynchronize(stop);
 	
-	cudaEventElapsedTime(&time_kernel, start, stop);
-	printf("Whole image CPU Histogram took %.5f ms\n", time_kernel);
+	cudaEventElapsedTime(&time_cpuHist, start, stop);
+	printf("Whole image CPU Histogram took %.5f ms\n", time_cpuHist);
 	
 	printf("\nHistogram sample from CPU, block (%d,%d)\n", tmp_whichBlockX, tmp_whichBlockY);
 	processPseudoHistogram(cpuHist, gpuBlockTotalX, gpuBlockTotalY, cpuHistPitch, 256, tmp_whichBlockX, tmp_whichBlockY, false);
@@ -123,9 +123,9 @@ int main (int argc, char** argv){
 	cudaEventRecord(stop, 0);
 	cudaEventSynchronize(stop);
 	
-	cudaEventElapsedTime(&time_statCalc, start, stop);
+	cudaEventElapsedTime(&time_cpuStatCalc, start, stop);
 	
-	printf("\nCPU mean median max min calculation took %.5f ms\n", time_statCalc);
+	printf("\nCPU mean median max min calculation took %.5f ms\n", time_cpuStatCalc);
 	printf("for block (%d, %d)\n", tmp_whichBlockX, tmp_whichBlockY);
 	printf("mean = %f\n", cpuStatMean[cpuStatStride*tmp_whichBlockY + tmp_whichBlockX]);
 	printf("median = %d\n", cpuStatMedian[cpuStatStride*tmp_whichBlockY + tmp_whichBlockX]);
@@ -170,8 +170,8 @@ int main (int argc, char** argv){
 	cudaEventSynchronize(stop);
 	
 	// print out time
-	cudaEventElapsedTime(&time_kernel, start, stop);
-	printf("Whole image GPU histogram took %.5f ms\n", time_kernel);
+	cudaEventElapsedTime(&time_gpuHist, start, stop);
+	printf("Whole image GPU histogram took %.5f ms, %.2fx %s than CPU\n", time_gpuHist, (time_cpuHist/time_gpuHist), (time_gpuHist<time_cpuHist)?"faster":"slower");
 
 	// testing result
 	printf("\nHistogram sample from GPU, block (%d,%d)\n", tmp_whichBlockX, tmp_whichBlockY);
