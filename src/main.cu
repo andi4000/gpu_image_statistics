@@ -105,7 +105,7 @@ int main (int argc, char** argv){
 	cudaPrintfEnd();
 	*/
 	
-	// =============================== CPU mean median max ====================
+	// =============================== CPU mean median max min ====================
 	
 	// histogram dimension, to process serialized 32x32 histogram
 	dim3 hist_blockDim = dim3(gpuBlockTotalX,gpuBlockTotalY,256);
@@ -178,7 +178,60 @@ int main (int argc, char** argv){
 	//TODO: needed no more?
 	processPseudoHistogram(host_hist2, gpuBlockTotalX, gpuBlockTotalY, dev_hist2_pitch, 256, tmp_whichBlockX, tmp_whichBlockY, false);
 
+	// =============================== GPU mean median max min ====================
+	// gpu histogram
+	/**
+	// host variables
+	int statArraySize = gpuBlockTotalX*gpuBlockTotalY;
+	float host_statMean[statArraySize];
+	unsigned int host_statMedian[statArraySize];
+	unsigned int host_statMax[statArraySize];
+	unsigned int host_statMin[statArraySize];
+	int statArrayStride = 32; //TODO: make this variable
 	
+	// device variables
+	float * dev_statMean;
+	unsigned int * dev_statMedian;
+	unsigned int * dev_statMax;
+	unsigned int * dev_statMin;
+	
+	// timer start
+	cudaEventRecord(start, 0);
+	
+	// device memory allocation
+	cudaMalloc(&dev_statMean, statArraySize * sizeof(float));
+	cudaMalloc(&dev_statMedian, statArraySize * sizeof(unsigned int));
+	cudaMalloc(&dev_statMax, statArraySize * sizeof(unsigned int));
+	cudaMalloc(&dev_statMin, statArraySize * sizeof(unsigned int));
+	
+	// set everything to zero
+	cudaMemset(dev_statMean, 0, statArraySize * sizeof(float));
+	cudaMemset(dev_statMedian, 0, statArraySize * sizeof(unsigned int));
+	cudaMemset(dev_statMax, 0, statArraySize * sizeof(unsigned int));
+	cudaMemset(dev_statMin, 0, statArraySize * sizeof(unsigned int));
+	
+	// kernel call
+	kernCalcMeanMedianMaxMin<<<blocksPerGrid, dev_hist2_pitch>>>(dev_hist2, dev_hist2_pitch, dev_statMean, dev_statMedian, dev_statMax, dev_statMin);
+	
+	// copy the results back to host
+	cudaMemcpy(host_statMean, dev_statMean, statArraySize * sizeof(float), cudaMemcpyDeviceToHost);
+	cudaMemcpy(host_statMedian, dev_statMedian, statArraySize * sizeof(unsigned int), cudaMemcpyDeviceToHost);
+	cudaMemcpy(host_statMax, dev_statMax, statArraySize * sizeof(unsigned int), cudaMemcpyDeviceToHost);
+	cudaMemcpy(host_statMin, dev_statMin, statArraySize * sizeof(unsigned int), cudaMemcpyDeviceToHost);
+	
+	// timer stop
+	cudaEventRecord(stop, 0);
+	cudaEventSynchronize(stop);
+	
+	// print out time
+	cudaEventElapsedTime(&time_gpuStatCalc, start, stop);
+	printf("\nGPU mean max min calculation took %.2f ms\n", time_gpuStatCalc);
+	printf("for block (%d,%d)\n", tmp_whichBlockX, tmp_whichBlockY);
+	printf("mean = %f\n", host_statMean[statArrayStride * tmp_whichBlockY + tmp_whichBlockX]);
+	printf("median = %d\n", host_statMedian[statArrayStride * tmp_whichBlockY + tmp_whichBlockX]);
+	printf("max = %d\n", host_statMax[statArrayStride * tmp_whichBlockY + tmp_whichBlockX]);
+	printf("min = %d\n", host_statMin[statArrayStride * tmp_whichBlockY + tmp_whichBlockX]);
+	*/
 	// testing for memcpy concept inside kernel
 	/**
 	int * test = new int[4];
@@ -191,10 +244,18 @@ int main (int argc, char** argv){
 	memcpy(aa, test, 2*sizeof(int));
 	printf("\n aa[0] = %d\naa[1] = %d\n", aa[0], aa[1]);
 	*/
-	
+
 	// cleanup
 	cudaFree(dev_image);
 	cudaFree(dev_hist2);
+	
+	// gpu histogram 
+	/**
+	cudaFree(dev_statMean);
+	cudaFree(dev_statMedian);
+	cudaFree(dev_statMax);
+	cudaFree(dev_statMin);
+	*/
 	cudaDeviceReset();
 	return 0;
 }
