@@ -189,7 +189,7 @@ int main (int argc, char** argv){
 
 	// =============================== GPU mean median max min ====================
 	// gpu histogram
-	/**
+	
 	// host variables
 	int statArraySize = gpuBlockTotalX*gpuBlockTotalY;
 	float host_statMean[statArraySize];
@@ -208,26 +208,29 @@ int main (int argc, char** argv){
 	cudaEventRecord(start, 0);
 	
 	// device memory allocation
-	cudaMalloc(&dev_statMean, statArraySize * sizeof(float));
+	gpuErrChk( cudaMalloc(&dev_statMean, statArraySize * sizeof(float)) );
 	//cudaMalloc(&dev_statMedian, statArraySize * sizeof(unsigned int));
-	cudaMalloc(&dev_statMax, statArraySize * sizeof(unsigned int));
-	cudaMalloc(&dev_statMin, statArraySize * sizeof(unsigned int));
+	gpuErrChk( cudaMalloc(&dev_statMax, statArraySize * sizeof(unsigned int)) );
+	gpuErrChk( cudaMalloc(&dev_statMin, statArraySize * sizeof(unsigned int)) );
 	
 	// set everything to zero
-	cudaMemset(dev_statMean, 0, statArraySize * sizeof(float));
+	gpuErrChk( cudaMemset(dev_statMean, 0, statArraySize * sizeof(float)) );
 	//cudaMemset(dev_statMedian, 0, statArraySize * sizeof(unsigned int));
-	cudaMemset(dev_statMax, 0, statArraySize * sizeof(unsigned int));
-	cudaMemset(dev_statMin, 0, statArraySize * sizeof(unsigned int));
+	gpuErrChk( cudaMemset(dev_statMax, 0, statArraySize * sizeof(unsigned int)) );
+	gpuErrChk( cudaMemset(dev_statMin, 0, statArraySize * sizeof(unsigned int)) );
 	
 	// kernel call
 	//kernCalcMeanMedianMaxMin<<<blocksPerGrid, dev_hist2_pitch>>>(dev_hist2, dev_hist2_pitch, dev_statMean, dev_statMedian, dev_statMax, dev_statMin);
 	kernCalcMeanMedianMaxMin<<<blocksPerGrid, dev_hist2_pitch>>>(dev_hist2, dev_hist2_pitch, dev_statMean, dev_statMax, dev_statMin);
 	
+	gpuErrChk( cudaPeekAtLastError() );
+	gpuErrChk( cudaDeviceSynchronize() );
+	
 	// copy the results back to host
-	cudaMemcpy(host_statMean, dev_statMean, statArraySize * sizeof(float), cudaMemcpyDeviceToHost);
+	gpuErrChk( cudaMemcpy(host_statMean, dev_statMean, statArraySize * sizeof(float), cudaMemcpyDeviceToHost) );
 	//cudaMemcpy(host_statMedian, dev_statMedian, statArraySize * sizeof(unsigned int), cudaMemcpyDeviceToHost);
-	cudaMemcpy(host_statMax, dev_statMax, statArraySize * sizeof(unsigned int), cudaMemcpyDeviceToHost);
-	cudaMemcpy(host_statMin, dev_statMin, statArraySize * sizeof(unsigned int), cudaMemcpyDeviceToHost);
+	gpuErrChk( cudaMemcpy(host_statMax, dev_statMax, statArraySize * sizeof(unsigned int), cudaMemcpyDeviceToHost) );
+	gpuErrChk( cudaMemcpy(host_statMin, dev_statMin, statArraySize * sizeof(unsigned int), cudaMemcpyDeviceToHost) );
 	
 	// timer stop
 	cudaEventRecord(stop, 0);
@@ -241,7 +244,7 @@ int main (int argc, char** argv){
 	//printf("median = %d\n", host_statMedian[statArrayStride * tmp_whichBlockY + tmp_whichBlockX]);
 	printf("max = %d\n", host_statMax[statArrayStride * tmp_whichBlockY + tmp_whichBlockX]);
 	printf("min = %d\n", host_statMin[statArrayStride * tmp_whichBlockY + tmp_whichBlockX]);
-	*/
+	
 	// testing for memcpy concept inside kernel
 	/**
 	int * test = new int[4];
@@ -260,12 +263,12 @@ int main (int argc, char** argv){
 	cudaFree(dev_hist2);
 	
 	// gpu histogram 
-	/**
-	cudaFree(dev_statMean);
+	
+	gpuErrChk( cudaFree(dev_statMean) );
 	//cudaFree(dev_statMedian);
-	cudaFree(dev_statMax);
-	cudaFree(dev_statMin);
-	*/
-	cudaDeviceReset();
+	gpuErrChk( cudaFree(dev_statMax) );
+	gpuErrChk( cudaFree(dev_statMin) );
+	
+	gpuErrChk( cudaDeviceReset() );
 	return 0;
 }
