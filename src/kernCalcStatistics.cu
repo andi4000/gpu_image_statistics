@@ -49,12 +49,10 @@ void kernCalcMeanMedianMaxMin(
 	//TODO: no median yet!
 	
 	// max & min
-	if (hist_data[ hist_tid + threadIdx.x ] != 0)
+	if (hist_data[ hist_tid + threadIdx.x ] != 0){
 		atomicMax(&(outMax[ out_tid ]), threadIdx.x);
-	__syncthreads();
-	
-	if (hist_data[ hist_tid + threadIdx.x ] != 0)
 		atomicMin(&(outMin[ out_tid ]), threadIdx.x);
+	}
 	__syncthreads();
 	
 }
