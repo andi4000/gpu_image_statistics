@@ -11,12 +11,11 @@ void cpuCalcBlockHist(const Mat src, int blockSizeX, int blockSizeY, int beginX,
 	for (int j = beginY; j < beginY + blockSizeY; j++){
 		for (int i = beginX; i < beginX + blockSizeX; i++){
 			bin = input[src.rows * j + i];
-			//cout<<"index = "<<src.rows * j + i<<endl;
+
 			outHist[bin]++;
 			count++;
 		}
 	}
-	//printf("count = %d\n", count);
 }
 
 void cpuCalcHistAll(const Mat src, int blockSizeX, int blockSizeY, int totalBlockX, int totalBlockY, int strideX, int strideY, unsigned int * outHist, int hist_pitch){
@@ -28,13 +27,13 @@ void cpuCalcHistAll(const Mat src, int blockSizeX, int blockSizeY, int totalBloc
 			beginX = i * strideX;
 			int hist_id = hist_pitch * (totalBlockX * j + i);
 			cpuCalcBlockHist(src, blockSizeX, blockSizeY, beginX, beginY, (outHist + hist_id));
-			//printf("Processing block (%d, %d)\n", i, j);
+			//printf("Processing block (%d, %d), hist_id = %d\n", i, j, hist_id);
 		}
 	}
 }
 
 void cpuCalcMeanMedianMaxMin(unsigned int * hist_data, dim3 hist_blockDim, int hist_pitch, float * outMean, unsigned int * outMedian, unsigned int * outMax, unsigned int * outMin){
-	// outMean, outMedian, outMax, and outMin are 2D array with dimension 32x32 which corresponds to the total blocks
+	// outMean, outMedian, outMax, and outMin are 2D array with dimension 31x31 which corresponds to the total blocks
 
 	unsigned int max = 0;
 	unsigned int min = 255;

@@ -86,9 +86,10 @@ int main (int argc, char** argv){
 	
 	// ================================ CPU Histogram =================================
 	
-	unsigned int cpuHist[gpuBlockTotalX * gpuBlockTotalY * 256];
 	int cpuHistPitch = 256;
-	
+	unsigned int cpuHist[gpuBlockTotalX * gpuBlockTotalY * cpuHistPitch];
+	memset(cpuHist, 0, gpuBlockTotalX * gpuBlockTotalY * cpuHistPitch * sizeof(unsigned int));
+		
 	blocksPerGrid = dim3(1,1,1);
 	threadsPerBlock = dim3(imgBlockSizeX, imgBlockSizeY, 1);
 	
@@ -104,7 +105,7 @@ int main (int argc, char** argv){
 	
 	printf("\nHistogram sample from CPU, block (%d,%d)\n", tmp_whichBlockX, tmp_whichBlockY);
 	processPseudoHistogram(cpuHist, gpuBlockTotalX, gpuBlockTotalY, cpuHistPitch, 256, tmp_whichBlockX, tmp_whichBlockY, false);
-
+	
 	/**
 	// testing cuprintf
 	printf("testing cuprintf\n");
@@ -120,11 +121,11 @@ int main (int argc, char** argv){
 	dim3 hist_blockDim = dim3(gpuBlockTotalX,gpuBlockTotalY,256);
 	
 	// mean, median, max, min, serialized array
+	int cpuStatStride = gpuBlockTotalX; // 31
 	float cpuStatMean[gpuBlockTotalX*gpuBlockTotalY];
 	unsigned int cpuStatMedian[gpuBlockTotalX*gpuBlockTotalY];
 	unsigned int cpuStatMax[gpuBlockTotalX*gpuBlockTotalY];
 	unsigned int cpuStatMin[gpuBlockTotalX*gpuBlockTotalY];
-	int cpuStatStride = 32; //TODO: make this variable
 	
 	// calculating mean median max min
 	cudaEventRecord(start, 0);
@@ -149,10 +150,10 @@ int main (int argc, char** argv){
 	threadsPerBlock = dim3(imgBlockSizeX, imgBlockSizeY, 1);
 	
 	// histogram, pseudo multi-dimension array
-	unsigned int host_hist2[gpuBlockTotalX*gpuBlockTotalY*256];
-	unsigned int * dev_hist2;
 	int dev_hist2_pitch = 256;
-	size_t size_hist2 = gpuBlockTotalX * gpuBlockTotalY * 256 * sizeof(unsigned int);
+	unsigned int host_hist2[gpuBlockTotalX*gpuBlockTotalY*dev_hist2_pitch];
+	unsigned int * dev_hist2;
+	size_t size_hist2 = gpuBlockTotalX * gpuBlockTotalY * dev_hist2_pitch * sizeof(unsigned int);
 	
 	// main show
 	printf("\n\n============= GPU =============\n");
@@ -192,11 +193,11 @@ int main (int argc, char** argv){
 	
 	// host variables
 	int statArraySize = gpuBlockTotalX*gpuBlockTotalY;
+	int statArrayStride = gpuBlockTotalX;
 	float host_statMean[statArraySize];
 	//unsigned int host_statMedian[statArraySize];
 	unsigned int host_statMax[statArraySize];
 	unsigned int host_statMin[statArraySize];
-	int statArrayStride = 32; //TODO: make this variable
 	
 	// device variables
 	unsigned int * dev_hist2stat;
@@ -204,6 +205,10 @@ int main (int argc, char** argv){
 	//unsigned int * dev_statMedian;
 	unsigned int * dev_statMax;
 	unsigned int * dev_statMin;
+	
+	printf("\nGPU mean median max min\n");
+	printf("blocks per grid = (%d, %d)\n", blocksPerGrid.x, blocksPerGrid.y);
+	printf("threads per block = (%d, %d)\n", threadsPerBlock.x, threadsPerBlock.y);
 	
 	// timer start
 	cudaEventRecord(start, 0);

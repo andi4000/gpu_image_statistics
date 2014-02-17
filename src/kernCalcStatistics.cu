@@ -23,7 +23,7 @@ void kernCalcMeanMedianMaxMin(
 	unsigned int * outMin
 )
 {
-	int hist_tid = hist_pitch * (blockDim.x * blockIdx.y + blockIdx.x);
+	int hist_tid = hist_pitch * (gridDim.x * blockIdx.y + blockIdx.x);
 	//TODO: copy one block of histogram to shared mem --> question: how?
 	// hint: memcpy http://stackoverflow.com/questions/10456728/is-there-an-equivalent-to-memcpy-that-works-inside-a-cuda-kernel
 	//__shared__ unsigned int blockHist[256] = hist_data[ hist_tid ];
@@ -40,8 +40,8 @@ void kernCalcMeanMedianMaxMin(
 	// mean = i * hist[i] / sum
 	float mean = threadIdx.x * hist_data[hist_tid + threadIdx.x] / sum;
 	
-	// output tid. output array are 32x32 matrices
-	int out_tid = blockIdx.y * blockDim.x + blockIdx.x;
+	// output tid. output array are 31x31 matrices
+	int out_tid = gridDim.x * blockIdx.y + blockIdx.x;
 	
 	// writing mean
 	atomicAdd(&(outMean[ out_tid ]), mean);
@@ -53,6 +53,7 @@ void kernCalcMeanMedianMaxMin(
 		atomicMax(&(outMax[ out_tid ]), threadIdx.x);
 		atomicMin(&(outMin[ out_tid ]), threadIdx.x);
 	}
+	__syncthreads();
 	
 }
 
