@@ -41,7 +41,7 @@ void kernCalcBlockHist(
 	int tid_y = cols * blockIdx.y * strideY + cols * threadIdx.y;
 	int tid = tid_y + tid_x;
 	
-	int hist_id = hist_pitch * ( blockDim.x * blockIdx.y + blockIdx.x ) + srcImg[tid];
+	int hist_id = hist_pitch * ( gridDim.x * blockIdx.y + blockIdx.x ) + srcImg[tid];
 	atomicAdd(&(outHist[ hist_id ]), 1);
 }
 

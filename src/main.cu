@@ -80,8 +80,8 @@ int main (int argc, char** argv){
 	int strideX = 16, strideY = 16;
 	
 	// grids and thread for cuda
-	int gpuBlockTotalX = matSrc.cols / strideX;
-	int gpuBlockTotalY = matSrc.rows / strideY;
+	int gpuBlockTotalX = matSrc.cols / strideX - 1;
+	int gpuBlockTotalY = matSrc.rows / strideY - 1;
 
 	
 	// ================================ CPU Histogram =================================
@@ -95,7 +95,7 @@ int main (int argc, char** argv){
 	printf("\n============= CPU =============\n");
 	
 	cudaEventRecord(start, 0);
-	cpuCalcHistAll(matSrc, imgBlockSizeX, imgBlockSizeY, strideX, strideY, cpuHist, cpuHistPitch);
+	cpuCalcHistAll(matSrc, imgBlockSizeX, imgBlockSizeY, gpuBlockTotalX, gpuBlockTotalY, strideX, strideY, cpuHist, cpuHistPitch);
 	cudaEventRecord(stop, 0);
 	cudaEventSynchronize(stop);
 	
@@ -145,7 +145,7 @@ int main (int argc, char** argv){
 	// ================================ GPU Histogram =================================
 	
 	// block sizes
-	blocksPerGrid = dim3(gpuBlockTotalX-1, gpuBlockTotalY-1, 1);
+	blocksPerGrid = dim3(gpuBlockTotalX, gpuBlockTotalY, 1);
 	threadsPerBlock = dim3(imgBlockSizeX, imgBlockSizeY, 1);
 	
 	// histogram, pseudo multi-dimension array
@@ -156,8 +156,8 @@ int main (int argc, char** argv){
 	
 	// main show
 	printf("\n\n============= GPU =============\n");
-	printf("blocks per grid = (%d, %d)\n", gpuBlockTotalX-1, gpuBlockTotalY-1);
-	printf("threads per block = (%d, %d)\n", imgBlockSizeX, imgBlockSizeY);
+	printf("blocks per grid = (%d, %d)\n", blocksPerGrid.x, blocksPerGrid.y);
+	printf("threads per block = (%d, %d)\n", threadsPerBlock.x, threadsPerBlock.y);
 	
 	// timer begin
 	cudaEventRecord(start,0);

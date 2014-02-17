@@ -19,10 +19,7 @@ void cpuCalcBlockHist(const Mat src, int blockSizeX, int blockSizeY, int beginX,
 	//printf("count = %d\n", count);
 }
 
-void cpuCalcHistAll(const Mat src, int blockSizeX, int blockSizeY, int strideX, int strideY, unsigned int * outHist, int hist_pitch){
-	int totalBlockX = src.cols / strideX;
-	int totalBlockY = src.rows / strideY;
-	
+void cpuCalcHistAll(const Mat src, int blockSizeX, int blockSizeY, int totalBlockX, int totalBlockY, int strideX, int strideY, unsigned int * outHist, int hist_pitch){
 	int beginX = 0, beginY = 0;
 	
 	for (int j = 0; j < totalBlockY; j++){
