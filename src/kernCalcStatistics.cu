@@ -30,7 +30,6 @@ void kernCalcMeanMedianMaxMin(
 	
 	//TODO: try binary reduction. atomic reduction do not give any performance gain
 	
-	//TODO: try this
 	__shared__ unsigned int blockHist[256];
 	blockHist[threadIdx.x] = hist_data[hist_tid + threadIdx.x];
 	
@@ -58,6 +57,21 @@ void kernCalcMeanMedianMaxMin(
 	
 }
 
+
+//TODO: try this binary reduction https://www.sharcnet.ca/help/index.php/CUDA_tips_and_tricks
+__global__
+void kernCalcMeanMedianMaxMinBinary(
+	unsigned int * hist_data,
+	int hist_pitch,
+	float * outMean,
+	unsigned int * outMax,
+	unsigned int * outMin
+)
+{
+	int thread2;
+	double temp;
+	//TODO: continue!
+}
 
 /**
 __device__
