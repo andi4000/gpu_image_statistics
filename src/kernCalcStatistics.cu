@@ -28,28 +28,29 @@ void kernCalcMeanMedianMaxMin(
 	// hint: memcpy http://stackoverflow.com/questions/10456728/is-there-an-equivalent-to-memcpy-that-works-inside-a-cuda-kernel
 	//__shared__ unsigned int blockHist[256] = hist_data[ hist_tid ];
 	
-	//TODO: use atomicMin and atomicMax, only for 256 elements
+	//TODO: try binary reduction. atomic reduction do not give any performance gain
 	
 	//TODO: try this
-	//__shared__ unsigned int blockHist[256];
-	//blockHist[threadIdx.x] = hist_data[hist_tid + threadIdx.x];
+	__shared__ unsigned int blockHist[256];
+	blockHist[threadIdx.x] = hist_data[hist_tid + threadIdx.x];
 	
 	//TODO: this is made from assuming img block size is 32x32
 	int sum = 1024; //32*32
 	
 	// mean = i * hist[i] / sum
-	float mean = threadIdx.x * hist_data[hist_tid + threadIdx.x] / (float)sum;
-	//cuPrintf("mean = %.5f\n", mean);
+	float mean = threadIdx.x * blockHist[threadIdx.x] / (float)sum;
+	
 	// output tid. output array are 31x31 matrices
 	int out_tid = gridDim.x * blockIdx.y + blockIdx.x;
 	
 	// writing mean
 	atomicAdd(&(outMean[ out_tid ]), mean);
 	__syncthreads();
+	
 	//TODO: no median yet!
 	
 	// max & min
-	if (hist_data[ hist_tid + threadIdx.x ] != 0){
+	if (blockHist[threadIdx.x] != 0){
 		atomicMax(&(outMax[ out_tid ]), threadIdx.x);
 		atomicMin(&(outMin[ out_tid ]), threadIdx.x);
 	}

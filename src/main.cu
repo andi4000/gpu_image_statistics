@@ -53,12 +53,19 @@ int main (int argc, char** argv){
 	}
 	
 	// which block to show result for testing purpose
-	int tmp_whichBlockX = 30;
-	int tmp_whichBlockY = 30; // referring to gpu block 0-30
+	int tmp_whichBlockX = 15;
+	int tmp_whichBlockY = 15; // referring to gpu block 0-30
 	
-	// block sizes
+	// image block sizes
 	int imgBlockSizeX = 32, imgBlockSizeY = 32;
-
+		
+	// stride for block processing overlap
+	int strideX = 16, strideY = 16;
+	
+	// total blocks for cuda
+	int gpuBlockTotalX = matSrc.cols / strideX - 1;
+	int gpuBlockTotalY = matSrc.rows / strideY - 1;
+	
 	// cuda grid and thread
 	dim3 blocksPerGrid;
 	dim3 threadsPerBlock;
@@ -75,13 +82,6 @@ int main (int argc, char** argv){
 	// device image
 	unsigned char * dev_image;
 	size_t size = matSrc.rows * matSrc.cols * sizeof(unsigned char);
-		
-	// stride for block processing overlap
-	int strideX = 16, strideY = 16;
-	
-	// grids and thread for cuda
-	int gpuBlockTotalX = matSrc.cols / strideX - 1;
-	int gpuBlockTotalY = matSrc.rows / strideY - 1;
 
 	
 	// ================================ CPU Histogram =================================
@@ -106,14 +106,6 @@ int main (int argc, char** argv){
 	printf("\nHistogram sample from CPU, block (%d,%d)\n", tmp_whichBlockX, tmp_whichBlockY);
 	processPseudoHistogram(cpuHist, gpuBlockTotalX, gpuBlockTotalY, cpuHistPitch, 256, tmp_whichBlockX, tmp_whichBlockY, false);
 	
-	/**
-	// testing cuprintf
-	printf("testing cuprintf\n");
-	cudaPrintfInit();
-	//kernCalcBlockHist<<<dim3(2,2), dim3(2,2)>>>();
-	cudaPrintfDisplay(stdout, true);
-	cudaPrintfEnd();
-	*/
 	
 	// =============================== CPU mean median max min ====================
 	
@@ -271,6 +263,15 @@ int main (int argc, char** argv){
 	int aa[2];
 	memcpy(aa, test, 2*sizeof(int));
 	printf("\n aa[0] = %d\naa[1] = %d\n", aa[0], aa[1]);
+	*/
+
+	/**
+	// testing cuprintf
+	printf("testing cuprintf\n");
+	cudaPrintfInit();
+	//kernCalcBlockHist<<<dim3(2,2), dim3(2,2)>>>();
+	cudaPrintfDisplay(stdout, true);
+	cudaPrintfEnd();
 	*/
 
 	// cleanup
