@@ -223,15 +223,20 @@ int main (int argc, char** argv){
 	// copy old histogram to new
 	gpuErrChk( cudaMemcpy(dev_hist2stat, host_hist2, size_hist2, cudaMemcpyHostToDevice) );
 	
-	// set everything to zero
+	// initialization
 	gpuErrChk( cudaMemset(dev_statMean, 0, statArraySize * sizeof(float)) );
 	//cudaMemset(dev_statMedian, 0, statArraySize * sizeof(unsigned int));
 	gpuErrChk( cudaMemset(dev_statMax, 0, statArraySize * sizeof(unsigned int)) );
-	gpuErrChk( cudaMemset(dev_statMin, 0, statArraySize * sizeof(unsigned int)) );
+	gpuErrChk( cudaMemset(dev_statMin, 255, statArraySize * sizeof(unsigned int)) );
+	
+	cudaPrintfInit();
 	
 	// kernel call
 	//kernCalcMeanMedianMaxMin<<<blocksPerGrid, dev_hist2_pitch>>>(dev_hist2, dev_hist2_pitch, dev_statMean, dev_statMedian, dev_statMax, dev_statMin);
 	kernCalcMeanMedianMaxMin<<<blocksPerGrid, dev_hist2_pitch>>>(dev_hist2stat, dev_hist2_pitch, dev_statMean, dev_statMax, dev_statMin);
+	
+	cudaPrintfDisplay(stdout, true);
+	cudaPrintfEnd();
 	
 	gpuErrChk( cudaPeekAtLastError() );
 	gpuErrChk( cudaDeviceSynchronize() );
@@ -248,7 +253,7 @@ int main (int argc, char** argv){
 	
 	// print out time
 	cudaEventElapsedTime(&time_gpuStatCalc, start, stop);
-	printf("\nGPU mean max min calculation took %.2f ms\n", time_gpuStatCalc);
+	printf("\nGPU mean max min calculation took %.2f ms, %.2fx %s than CPU\n", time_gpuStatCalc, time_cpuStatCalc/time_gpuStatCalc, (time_gpuStatCalc<time_cpuStatCalc)?"faster":"slower");
 	printf("for block (%d,%d)\n", tmp_whichBlockX, tmp_whichBlockY);
 	printf("mean = %f\n", host_statMean[statArrayStride * tmp_whichBlockY + tmp_whichBlockX]);
 	//printf("median = %d\n", host_statMedian[statArrayStride * tmp_whichBlockY + tmp_whichBlockX]);

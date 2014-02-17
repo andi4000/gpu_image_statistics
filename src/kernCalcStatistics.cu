@@ -38,21 +38,23 @@ void kernCalcMeanMedianMaxMin(
 	int sum = 1024; //32*32
 	
 	// mean = i * hist[i] / sum
-	float mean = threadIdx.x * hist_data[hist_tid + threadIdx.x] / sum;
-	
+	float mean = threadIdx.x * hist_data[hist_tid + threadIdx.x] / (float)sum;
+	//cuPrintf("mean = %.5f\n", mean);
 	// output tid. output array are 31x31 matrices
 	int out_tid = gridDim.x * blockIdx.y + blockIdx.x;
 	
 	// writing mean
 	atomicAdd(&(outMean[ out_tid ]), mean);
-	
+	__syncthreads();
 	//TODO: no median yet!
 	
 	// max & min
-	if (hist_data[ hist_tid + threadIdx.x ] != 0){
+	if (hist_data[ hist_tid + threadIdx.x ] != 0)
 		atomicMax(&(outMax[ out_tid ]), threadIdx.x);
+	__syncthreads();
+	
+	if (hist_data[ hist_tid + threadIdx.x ] != 0)
 		atomicMin(&(outMin[ out_tid ]), threadIdx.x);
-	}
 	__syncthreads();
 	
 }
