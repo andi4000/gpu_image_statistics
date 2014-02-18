@@ -113,7 +113,7 @@ int main (int argc, char** argv){
 	//dim3 hist_blockDim = dim3(gpuBlockTotalX,gpuBlockTotalY,256);
 	
 	// mean, median, max, min, serialized array
-	int cpuStatStride = gpuBlockTotalX; // 31
+	int cpuStatPitch = gpuBlockTotalX; // 31
 	float cpuStatMean[gpuBlockTotalX*gpuBlockTotalY];
 	unsigned int cpuStatMedian[gpuBlockTotalX*gpuBlockTotalY];
 	unsigned int cpuStatMax[gpuBlockTotalX*gpuBlockTotalY];
@@ -130,10 +130,10 @@ int main (int argc, char** argv){
 	
 	printf("\nCPU mean median max min calculation took %.5f ms\n", time_cpuStatCalc);
 	printf("for block (%d, %d)\n", tmp_whichBlockX, tmp_whichBlockY);
-	printf("mean = %f\n", cpuStatMean[cpuStatStride*tmp_whichBlockY + tmp_whichBlockX]);
-	printf("median = %d\n", cpuStatMedian[cpuStatStride*tmp_whichBlockY + tmp_whichBlockX]);
-	printf("max = %d\n", cpuStatMax[cpuStatStride*tmp_whichBlockY + tmp_whichBlockX]);
-	printf("min = %d\n", cpuStatMin[cpuStatStride*tmp_whichBlockY + tmp_whichBlockX]);
+	printf("mean = %f\n", cpuStatMean[cpuStatPitch*tmp_whichBlockY + tmp_whichBlockX]);
+	printf("median = %d\n", cpuStatMedian[cpuStatPitch*tmp_whichBlockY + tmp_whichBlockX]);
+	printf("max = %d\n", cpuStatMax[cpuStatPitch*tmp_whichBlockY + tmp_whichBlockX]);
+	printf("min = %d\n", cpuStatMin[cpuStatPitch*tmp_whichBlockY + tmp_whichBlockX]);
 	
 
 	// ================================ GPU Histogram =================================
