@@ -150,7 +150,7 @@ void cpuCalcVariance(unsigned int * pHist_data, int hist_dimx, int hist_dimy, in
 			// now loop through histogram values
 			for (int x = 0; x < hist_pitch; x++){
 				float x_minus_mean = (float)x - pMean[array_id];
-				pOutVariance[array_id] += histTmp[x] * (x_minus_mean*x_minus_mean) / (float)(numData - 1);
+				pOutVariance[array_id] += histTmp[x] * (x_minus_mean*x_minus_mean) / (float)(numData);
 				//if (i == 30 && j == 30)
 					//printf("%d * (%d - %.3f)^2 / (%d - 1) = %.3f\n", histTmp[x], x, mean[array_id], numData, tmpVar);
 			}
