@@ -41,7 +41,7 @@ void cpuCalcMeanMedianMaxMin(unsigned int * hist_data, int hist_dimx, int hist_d
 	for (int j = 0; j < hist_dimy; j++){
 		for (int i = 0; i < hist_dimx; i++){
 			int out_id = hist_dimx * j + i;
-			int hist_id = hist_pitch * (hist_dx * j + i);
+			int hist_id = hist_pitch * (hist_dimx * j + i);
 
 			getMeanMedian(hist_data + hist_id, 256, outMean + out_id, outMedian + out_id);
 			outMax[out_id] = getMax(hist_data + hist_id, 256);
