@@ -109,8 +109,8 @@ int main (int argc, char** argv){
 	
 	// =============================== CPU mean median max min ====================
 	
-	// histogram dimension, to process serialized 32x32 histogram
-	dim3 hist_blockDim = dim3(gpuBlockTotalX,gpuBlockTotalY,256);
+	// histogram dimension, to process serialized 31x31 histogram
+	//dim3 hist_blockDim = dim3(gpuBlockTotalX,gpuBlockTotalY,256);
 	
 	// mean, median, max, min, serialized array
 	int cpuStatStride = gpuBlockTotalX; // 31
@@ -121,7 +121,8 @@ int main (int argc, char** argv){
 	
 	// calculating mean median max min
 	cudaEventRecord(start, 0);
-	cpuCalcMeanMedianMaxMin(cpuHist, hist_blockDim, cpuHistPitch, cpuStatMean, cpuStatMedian, cpuStatMax, cpuStatMin);
+	//cpuCalcMeanMedianMaxMin(cpuHist, hist_blockDim, cpuHistPitch, cpuStatMean, cpuStatMedian, cpuStatMax, cpuStatMin);
+	cpuCalcMeanMedianMaxMin(cpuHist, gpuBlockTotalX, gpuBlockTotalY, cpuHistPitch, cpuStatMean, cpuStatMedian, cpuStatMax, cpuStatMin);
 	cudaEventRecord(stop, 0);
 	cudaEventSynchronize(stop);
 	

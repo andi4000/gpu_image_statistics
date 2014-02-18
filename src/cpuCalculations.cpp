@@ -32,16 +32,16 @@ void cpuCalcHistAll(const Mat src, int blockSizeX, int blockSizeY, int totalBloc
 	}
 }
 
-void cpuCalcMeanMedianMaxMin(unsigned int * hist_data, dim3 hist_blockDim, int hist_pitch, float * outMean, unsigned int * outMedian, unsigned int * outMax, unsigned int * outMin){
+void cpuCalcMeanMedianMaxMin(unsigned int * hist_data, int hist_dimx, int hist_dimy, int hist_pitch, float * outMean, unsigned int * outMedian, unsigned int * outMax, unsigned int * outMin){
 	// outMean, outMedian, outMax, and outMin are 2D array with dimension 31x31 which corresponds to the total blocks
 
 	unsigned int max = 0;
 	unsigned int min = 255;
 	
-	for (int j = 0; j < hist_blockDim.y; j++){
-		for (int i = 0; i < hist_blockDim.x; i++){
-			int out_id = hist_blockDim.x * j + i;
-			int hist_id = hist_pitch * (hist_blockDim.x * j + i);
+	for (int j = 0; j < hist_dimy; j++){
+		for (int i = 0; i < hist_dimx; i++){
+			int out_id = hist_dimx * j + i;
+			int hist_id = hist_pitch * (hist_dx * j + i);
 
 			getMeanMedian(hist_data + hist_id, 256, outMean + out_id, outMedian + out_id);
 			outMax[out_id] = getMax(hist_data + hist_id, 256);
