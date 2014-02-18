@@ -135,7 +135,16 @@ int main (int argc, char** argv){
 	printf("max = %d\n", cpuStatMax[cpuStatPitch*tmp_whichBlockY + tmp_whichBlockX]);
 	printf("min = %d\n", cpuStatMin[cpuStatPitch*tmp_whichBlockY + tmp_whichBlockX]);
 	
+	// =============================== CPU variance ====================
 
+	float cpuStatVariance[gpuBlockTotalX*gpuBlockTotalY];
+	memset(cpuStatVariance, 0.0, gpuBlockTotalX*gpuBlockTotalY*size(float));
+
+	// calculating variance
+	cpuCalcVariance(cpuHist, gpuBlockTotalX, gpuBlockTotalY, cpuHistPitch, cpuStatMean, cpuStatPitch, (imgBlockSizeX*imgBlockSizeY), cpuStatVariance);
+	printf("\nVariance\n");
+	printf("var = %.3f\n", cpuStatVariance[cpuStatPitch*tmp_whichBlockY + tmp_whichBlockX]);
+	
 	// ================================ GPU Histogram =================================
 	
 	// block sizes
