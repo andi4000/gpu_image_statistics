@@ -214,6 +214,7 @@ int main (int argc, char** argv){
 	gpuErrChk( cudaMalloc(&dev_statMin, statArraySize * sizeof(unsigned int)) );
 	
 	// copy old histogram to new
+	//TODO: try cudaMemcpyHostToHost!
 	gpuErrChk( cudaMemcpy(dev_hist2stat, host_hist2, size_hist2, cudaMemcpyHostToDevice) );
 	
 	// initialization

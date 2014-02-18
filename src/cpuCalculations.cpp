@@ -129,3 +129,32 @@ void processPseudoHistogram(unsigned int * hist, int dimx, int dimy, int dimz, i
 	printf("n = %d\n", n);
 	printf("mean = %.5f\n", mean);
 }
+
+/**
+ * outVariance is 31x31 pseudo matrix
+ * dont forget to memset to 0s
+ * numData refers to histogram data points (1024)
+ */
+
+void cpuCalcVariance(unsigned int * hist_data, int hist_dimx, int hist_dimy, int hist_pitch, float * mean, int statArrayPitch, int numData, float * outVariance){
+	// formula: sum( p(x) * (x - mean)^2 / (N - 1))
+	// block loop
+	unsigned int * histTmp;
+	for (int j = 0; j < hist_dimy; j++){
+		for (int i = 0; i < hist_dimx; i++){
+			// were inside a block now.
+			int array_id = statArrayPitch * j + i;
+			int hist_id = hist_pitch * (hist_dimx * j + i);
+			histTmp = hist_data + hist_id;
+			float tmpVar = 0;
+			// now loop through histogram values
+			for (int x = 0; x < hist_pitch; x++){
+				float x_minus_mean = (float)x - mean[array_id];
+				outVariance[array_id] += histTmp[x] * (x_minus_mean*x_minus_mean) / (float)(numData - 1);
+				//if (i == 30 && j == 30)
+					//printf("%d * (%d - %.3f)^2 / (%d - 1) = %.3f\n", histTmp[x], x, mean[array_id], numData, tmpVar);
+			}
+		}
+	}
+	
+}
