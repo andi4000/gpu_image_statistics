@@ -103,10 +103,7 @@ int main (int argc, char** argv){
 	
 	cudaEventElapsedTime(&time_cpuHist, start, stop);
 	printf("Whole image CPU Histogram took %.5f ms\n", time_cpuHist);
-	
-	printf("\nHistogram sample from CPU, block (%d,%d)\n", tmp_whichBlockX, tmp_whichBlockY);
-	processPseudoHistogram(cpuHist, gpuBlockTotalX, gpuBlockTotalY, cpuHistPitch, 256, tmp_whichBlockX, tmp_whichBlockY, false);
-	
+
 	
 	// =============================== CPU mean median max min  && central moments, skewness, kurtosis ====================
 	
@@ -200,7 +197,7 @@ int main (int argc, char** argv){
 	kernCalcBlockHist<<<blocksPerGrid, threadsPerBlock>>>(dev_image, matSrc.rows, matSrc.cols, strideX, strideY, dev_hist2, dev_hist2_pitch);
 
 	// copy the result back
-	cudaMemcpy(host_hist2, dev_hist2, size_hist2, cudaMemcpyDeviceToHost);
+	//cudaMemcpy(host_hist2, dev_hist2, size_hist2, cudaMemcpyDeviceToHost);
 	
 	// timer end
 	cudaEventRecord(stop,0);
@@ -210,10 +207,6 @@ int main (int argc, char** argv){
 	cudaEventElapsedTime(&time_gpuHist, start, stop);
 	printf("Whole image GPU histogram took %.5f ms, %.2fx %s than CPU\n", time_gpuHist, (time_cpuHist/time_gpuHist), (time_gpuHist<time_cpuHist)?"faster":"slower");
 
-	// testing result
-	printf("\nHistogram sample from GPU, block (%d,%d)\n", tmp_whichBlockX, tmp_whichBlockY);
-	//TODO: needed no more?
-	processPseudoHistogram(host_hist2, gpuBlockTotalX, gpuBlockTotalY, dev_hist2_pitch, 256, tmp_whichBlockX, tmp_whichBlockY, false);
 
 	// =============================== GPU mean median max min ====================
 	// gpu histogram
@@ -240,7 +233,7 @@ int main (int argc, char** argv){
 	float host_statKurtosis[statArraySize];
 	
 	// device variables: mean median max min
-	unsigned int * dev_hist2stat;
+	//unsigned int * dev_hist2stat;
 	float * dev_statMean;
 	unsigned int * dev_statMedian;
 	unsigned int * dev_statMax;
@@ -261,7 +254,7 @@ int main (int argc, char** argv){
 	
 	//TODO: why cant we use histogram data from last operation?
 	// device malloc: histogram
-	gpuErrChk( cudaMalloc(&dev_hist2stat, size_hist2) );
+	//gpuErrChk( cudaMalloc(&dev_hist2stat, size_hist2) );
 	
 	// device malloc: mean median max min
 	gpuErrChk( cudaMalloc(&dev_statMean, statArraySize * sizeof(float)) );
@@ -281,7 +274,7 @@ int main (int argc, char** argv){
 	
 	// copy old histogram to new
 	//TODO: try cudaMemcpyHostToHost! --> seg fault
-	gpuErrChk( cudaMemcpy(dev_hist2stat, host_hist2, size_hist2, cudaMemcpyHostToDevice) );
+	//gpuErrChk( cudaMemcpy(dev_hist2stat, host_hist2, size_hist2, cudaMemcpyHostToDevice) );
 	
 	// init: mean median max min
 	gpuErrChk( cudaMemset(dev_statMean, 0, statArraySize * sizeof(float)) );
@@ -302,10 +295,10 @@ int main (int argc, char** argv){
 	cudaPrintfInit();
 	
 	// kernel call: mean median max min. 31x31 blocks, 256 threads/block
-	kernCalcMeanMedianMaxMin<<<blocksPerGrid, dev_hist2_pitch>>>(dev_hist2stat, (imgBlockSizeX*imgBlockSizeY), dev_hist2_pitch, dev_statMean, dev_statMedian, dev_statMax, dev_statMin);
+	kernCalcMeanMedianMaxMin<<<blocksPerGrid, dev_hist2_pitch>>>(dev_hist2, (imgBlockSizeX*imgBlockSizeY), dev_hist2_pitch, dev_statMean, dev_statMedian, dev_statMax, dev_statMin);
 	
 	// kernel call: central moments. 31x31 blocks, 256 threads/block
-	kernCalcCentralMoments<<<blocksPerGrid, dev_hist2_pitch>>>(dev_hist2stat, dev_hist2_pitch, (imgBlockSizeX*imgBlockSizeY), dev_statMean, dev_statCentralMoments2, dev_statCentralMoments3, dev_statCentralMoments4, dev_statCentralMoments5);
+	kernCalcCentralMoments<<<blocksPerGrid, dev_hist2_pitch>>>(dev_hist2, dev_hist2_pitch, (imgBlockSizeX*imgBlockSizeY), dev_statMean, dev_statCentralMoments2, dev_statCentralMoments3, dev_statCentralMoments4, dev_statCentralMoments5);
 	
 	// kernel call: skewness and kurtosis. 31x31 blocks, 1 thread per block
 	kernCalcSkewnessKurtosis<<<blocksPerGrid, 1>>>(dev_statCentralMoments2, dev_statCentralMoments3, dev_statCentralMoments4, dev_statSkewness, dev_statKurtosis);
@@ -358,6 +351,8 @@ int main (int argc, char** argv){
 	printf("skewness = %.3f\n", host_statSkewness[statArrayPitch * tmp_whichBlockY + tmp_whichBlockX]);
 	printf("kurtosis = %.3f\n", host_statKurtosis[statArrayPitch * tmp_whichBlockY + tmp_whichBlockX]);
 
+	float speedup = (time_cpuStatCalc + time_cpuHist)/(time_gpuStatCalc + time_gpuHist);
+	printf("\n\n>>> Total speedup: %.2fx\n", speedup);
 	/**
 	// testing cuprintf
 	printf("testing cuprintf\n");
@@ -373,7 +368,7 @@ int main (int argc, char** argv){
 	
 	// gpu histogram 
 	
-	gpuErrChk( cudaFree(dev_hist2stat) );
+	//gpuErrChk( cudaFree(dev_hist2stat) );
 	gpuErrChk( cudaFree(dev_statMean) );
 	gpuErrChk( cudaFree(dev_statMedian) );
 	gpuErrChk( cudaFree(dev_statMax) );
