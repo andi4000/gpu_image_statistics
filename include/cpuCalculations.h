@@ -12,5 +12,6 @@ unsigned int getMax(unsigned int * hist, int max);
 unsigned int getMin(unsigned int * hist, int max);
 
 void cpuCalcVariance(unsigned int * hist_data, int hist_dimx, int hist_dimy, int hist_pitch, float * mean, int statArrayPitch, int numData, float * outVariance);
+void cpuCalcCentralMoments(unsigned int * pHist_data, int hist_dimx, int hist_dimy, int hist_pitch, float * pMean, int statArrayPitch, int numData, float * pOutMoments2, float * pOutMoments3, float * pOutMoments4);
 
 #endif

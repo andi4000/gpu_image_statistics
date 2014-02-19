@@ -5,5 +5,6 @@
 #include <cuda_runtime_api.h>
 #include <cuda.h>
 #include <opencv2/opencv.hpp>
+#include <cmath>
 
 #endif

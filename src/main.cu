@@ -54,8 +54,8 @@ int main (int argc, char** argv){
 	}
 	
 	// which block to show result for testing purpose
-	int tmp_whichBlockX = 15;
-	int tmp_whichBlockY = 15; // referring to gpu block 0-30
+	int tmp_whichBlockX = 30;
+	int tmp_whichBlockY = 30; // referring to gpu block 0-30
 	
 	// image block sizes
 	int imgBlockSizeX = 32, imgBlockSizeY = 32;
@@ -136,15 +136,29 @@ int main (int argc, char** argv){
 	printf("max = %d\n", cpuStatMax[cpuStatPitch*tmp_whichBlockY + tmp_whichBlockX]);
 	printf("min = %d\n", cpuStatMin[cpuStatPitch*tmp_whichBlockY + tmp_whichBlockX]);
 	
-	// =============================== CPU variance ====================
+	// =============================== CPU central moments ====================
 
 	float cpuStatVariance[gpuBlockTotalX*gpuBlockTotalY];
-	memset(cpuStatVariance, 0.0, gpuBlockTotalX*gpuBlockTotalY*size(float));
+	memset(cpuStatVariance, 0.0, gpuBlockTotalX*gpuBlockTotalY*sizeof(float));
 
-	// calculating variance
-	cpuCalcVariance(cpuHist, gpuBlockTotalX, gpuBlockTotalY, cpuHistPitch, cpuStatMean, cpuStatPitch, (imgBlockSizeX*imgBlockSizeY), cpuStatVariance);
-	printf("\nVariance\n");
-	printf("var = %.3f\n", cpuStatVariance[cpuStatPitch*tmp_whichBlockY + tmp_whichBlockX]);
+	// variables to hold central moments
+	float cpuStatCentralMoment2[gpuBlockTotalX*gpuBlockTotalY];
+	float cpuStatCentralMoment3[gpuBlockTotalX*gpuBlockTotalY];
+	float cpuStatCentralMoment4[gpuBlockTotalX*gpuBlockTotalY];
+	
+	// set all to zeroes
+	memset(cpuStatCentralMoment2, 0.0, gpuBlockTotalX*gpuBlockTotalY*sizeof(float));
+	memset(cpuStatCentralMoment3, 0.0, gpuBlockTotalX*gpuBlockTotalY*sizeof(float));
+	memset(cpuStatCentralMoment4, 0.0, gpuBlockTotalX*gpuBlockTotalY*sizeof(float));
+	
+	// calculating moments
+	cpuCalcCentralMoments(cpuHist, gpuBlockTotalX, gpuBlockTotalY, cpuHistPitch, cpuStatMean, cpuStatPitch, (imgBlockSizeX*imgBlockSizeY), cpuStatCentralMoment2, cpuStatCentralMoment3, cpuStatCentralMoment4);
+	//cpuCalcVariance(cpuHist, gpuBlockTotalX, gpuBlockTotalY, cpuHistPitch, cpuStatMean, cpuStatPitch, (imgBlockSizeX*imgBlockSizeY), cpuStatVariance);
+	
+	printf("\nCentralMoments\n");
+	printf("M2 = %.3f\n", cpuStatCentralMoment2[cpuStatPitch*tmp_whichBlockY + tmp_whichBlockX]);
+	printf("M3 = %.3f\n", cpuStatCentralMoment3[cpuStatPitch*tmp_whichBlockY + tmp_whichBlockX]);
+	printf("M4 = %.3f\n", cpuStatCentralMoment4[cpuStatPitch*tmp_whichBlockY + tmp_whichBlockX]);
 	
 	// ================================ GPU Histogram =================================
 	

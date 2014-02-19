@@ -146,7 +146,7 @@ void cpuCalcVariance(unsigned int * pHist_data, int hist_dimx, int hist_dimy, in
 			int array_id = statArrayPitch * j + i;
 			int hist_id = hist_pitch * (hist_dimx * j + i);
 			histTmp = pHist_data + hist_id;
-			float tmpVar = 0;
+			
 			// now loop through histogram values
 			for (int x = 0; x < hist_pitch; x++){
 				float x_minus_mean = (float)x - pMean[array_id];
@@ -157,4 +157,25 @@ void cpuCalcVariance(unsigned int * pHist_data, int hist_dimx, int hist_dimy, in
 		}
 	}
 	
+}
+
+void cpuCalcCentralMoments(unsigned int * pHist_data, int hist_dimx, int hist_dimy, int hist_pitch, float * pMean, int statArrayPitch, int numData, float * pOutMoments2, float * pOutMoments3, float * pOutMoments4){
+	// formula: sum( (x - mean)^order ) / numData
+	unsigned int * pHistTmp;
+	for (int j = 0; j < hist_dimy; j++){
+		for (int i = 0; i < hist_dimx; i++){
+			// inside a block
+			int outArray_id = statArrayPitch * j + i;
+			int hist_id = hist_pitch * (hist_dimx * j + i);
+			pHistTmp = pHist_data + hist_id;
+			
+			// now loop through histogram data
+			for (int x = 0; x < hist_pitch; x++){
+				float x_minus_mean = (float)x - pMean[outArray_id];
+				pOutMoments2[outArray_id] += pHistTmp[x] * pow(x_minus_mean, 2) / (float)numData;
+				pOutMoments3[outArray_id] += pHistTmp[x] * pow(x_minus_mean, 3) / (float)numData;
+				pOutMoments4[outArray_id] += pHistTmp[x] * pow(x_minus_mean, 4) / (float)numData;
+			}
+		}
+	}
 }
