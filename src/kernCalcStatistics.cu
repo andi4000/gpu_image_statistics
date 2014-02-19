@@ -14,11 +14,11 @@ void kernCalcStatistics(
 __global__
 void kernCalcMeanMedianMaxMin(
 	unsigned int * pHist_data,
-	/*int * pHist_data_n,*/ // number of data points
+	int numData, // number of data points per block (32x32 = 1024)
 	/*dim3 hist_blockDim, */ // not sure if this is 31x31 or 32x32
 	int hist_pitch,
 	float * pOutMean,
-	/*unsigned int * outMedian,*/
+	unsigned int * outMedian,
 	unsigned int * pOutMax,
 	unsigned int * pOutMin
 )
@@ -33,11 +33,8 @@ void kernCalcMeanMedianMaxMin(
 	__shared__ unsigned int blockHist[256];
 	blockHist[threadIdx.x] = pHist_data[hist_tid + threadIdx.x];
 	
-	//TODO: this is made from assuming img block size is 32x32
-	int sum = 1024; //32*32
-	
 	// mean = i * hist[i] / sum
-	float mean = threadIdx.x * blockHist[threadIdx.x] / (float)sum;
+	float mean = threadIdx.x * blockHist[threadIdx.x] / (float)numData;
 	
 	// output tid. output array are 31x31 matrices
 	int out_tid = gridDim.x * blockIdx.y + blockIdx.x;
@@ -77,9 +74,8 @@ __global__
 void kernCalcCentralMoments(
 	unsigned int * pHist_data,
 	int hist_pitch,
-	float * pMean,
-	int statArrayPitch,
 	int numData,
+	float * pMean,
 	float * pOutMoments2,
 	float * pOutMoments3,
 	float * pOutMoments4,
@@ -94,12 +90,12 @@ void kernCalcCentralMoments(
 	// out array tid (31x31)
 	int out_tid = gridDim.x * blockIdx.y + blockIdx.x;
 	
-	float x_minus_mean = threadIdx.x * pMean[out_tid];
+	float x_minus_mean = (float)threadIdx.x - pMean[out_tid];
 	float m2 = blockHist[threadIdx.x] * powf(x_minus_mean, 2) / (float)numData;
 	float m3 = blockHist[threadIdx.x] * powf(x_minus_mean, 3) / (float)numData;
 	float m4 = blockHist[threadIdx.x] * powf(x_minus_mean, 4) / (float)numData;
 	float m5 = blockHist[threadIdx.x] * powf(x_minus_mean, 5) / (float)numData;
-	
+
 	atomicAdd(&(pOutMoments2[out_tid]), m2);
 	atomicAdd(&(pOutMoments3[out_tid]), m3);
 	atomicAdd(&(pOutMoments4[out_tid]), m4);
@@ -112,7 +108,6 @@ void kernCalcSkewnessKurtosis(
 	float * pMoments2,
 	float * pMoments3,
 	float * pMoments4,
-	int statArrayPitch,
 	float * pOutSkewness,
 	float * pOutKurtosis
 )
