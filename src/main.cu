@@ -15,6 +15,7 @@
  * 
  * Needed features:
  * - mean
+ * - median
  * - min
  * - max
  * - variance
