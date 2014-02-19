@@ -159,7 +159,7 @@ void cpuCalcVariance(unsigned int * pHist_data, int hist_dimx, int hist_dimy, in
 	
 }
 
-void cpuCalcCentralMoments(unsigned int * pHist_data, int hist_dimx, int hist_dimy, int hist_pitch, float * pMean, int statArrayPitch, int numData, float * pOutMoments2, float * pOutMoments3, float * pOutMoments4){
+void cpuCalcCentralMoments(unsigned int * pHist_data, int hist_dimx, int hist_dimy, int hist_pitch, float * pMean, int statArrayPitch, int numData, float * pOutMoments2, float * pOutMoments3, float * pOutMoments4, float * pOutMoments5){
 	// formula: sum( (x - mean)^order ) / numData
 	unsigned int * pHistTmp;
 	for (int j = 0; j < hist_dimy; j++){
@@ -175,7 +175,22 @@ void cpuCalcCentralMoments(unsigned int * pHist_data, int hist_dimx, int hist_di
 				pOutMoments2[outArray_id] += pHistTmp[x] * pow(x_minus_mean, 2) / (float)numData;
 				pOutMoments3[outArray_id] += pHistTmp[x] * pow(x_minus_mean, 3) / (float)numData;
 				pOutMoments4[outArray_id] += pHistTmp[x] * pow(x_minus_mean, 4) / (float)numData;
+				pOutMoments5[outArray_id] += pHistTmp[x] * pow(x_minus_mean, 5) / (float)numData;
 			}
+		}
+	}
+}
+
+void cpuCalcVarianceSkewnessKurtosis(float * pMoments2, float * pMoments3, float * pMoments4, int arrayDimX, int arrayDimY, int statArrayPitch, float * pOutVariance, float * pOutSkewness, float * pOutKurtosis){
+	// variance = 2nd central moment
+	// skewness = m3 / (m2^1.5)
+	// kurtosis = m4 / (m2^2)
+	for (int j = 0; j < arrayDimY; j++){
+		for (int i = 0; i < arrayDimY; i++){
+			int arrayId = statArrayPitch * j + i;
+			pOutVariance[arrayId] = pMoments2[arrayId];
+			pOutSkewness[arrayId] = pMoments3[arrayId] / pow(pMoments2[arrayId], 1.5);
+			pOutKurtosis[arrayId] = pMoments4[arrayId] / pow(pMoments2[arrayId], 2);
 		}
 	}
 }

@@ -138,28 +138,41 @@ int main (int argc, char** argv){
 	
 	// =============================== CPU central moments ====================
 
-	float cpuStatVariance[gpuBlockTotalX*gpuBlockTotalY];
-	memset(cpuStatVariance, 0.0, gpuBlockTotalX*gpuBlockTotalY*sizeof(float));
-
 	// variables to hold central moments
 	float cpuStatCentralMoment2[gpuBlockTotalX*gpuBlockTotalY];
 	float cpuStatCentralMoment3[gpuBlockTotalX*gpuBlockTotalY];
 	float cpuStatCentralMoment4[gpuBlockTotalX*gpuBlockTotalY];
-	
-	// set all to zeroes
+	float cpuStatCentralMoment5[gpuBlockTotalX*gpuBlockTotalY];
 	memset(cpuStatCentralMoment2, 0.0, gpuBlockTotalX*gpuBlockTotalY*sizeof(float));
 	memset(cpuStatCentralMoment3, 0.0, gpuBlockTotalX*gpuBlockTotalY*sizeof(float));
 	memset(cpuStatCentralMoment4, 0.0, gpuBlockTotalX*gpuBlockTotalY*sizeof(float));
+	memset(cpuStatCentralMoment5, 0.0, gpuBlockTotalX*gpuBlockTotalY*sizeof(float));
 	
 	// calculating moments
-	cpuCalcCentralMoments(cpuHist, gpuBlockTotalX, gpuBlockTotalY, cpuHistPitch, cpuStatMean, cpuStatPitch, (imgBlockSizeX*imgBlockSizeY), cpuStatCentralMoment2, cpuStatCentralMoment3, cpuStatCentralMoment4);
-	//cpuCalcVariance(cpuHist, gpuBlockTotalX, gpuBlockTotalY, cpuHistPitch, cpuStatMean, cpuStatPitch, (imgBlockSizeX*imgBlockSizeY), cpuStatVariance);
+	cpuCalcCentralMoments(cpuHist, gpuBlockTotalX, gpuBlockTotalY, cpuHistPitch, cpuStatMean, cpuStatPitch, (imgBlockSizeX*imgBlockSizeY), cpuStatCentralMoment2, cpuStatCentralMoment3, cpuStatCentralMoment4, cpuStatCentralMoment5);
 	
-	printf("\nCentralMoments\n");
+	printf("\nCentral Moments\n");
 	printf("M2 = %.3f\n", cpuStatCentralMoment2[cpuStatPitch*tmp_whichBlockY + tmp_whichBlockX]);
 	printf("M3 = %.3f\n", cpuStatCentralMoment3[cpuStatPitch*tmp_whichBlockY + tmp_whichBlockX]);
 	printf("M4 = %.3f\n", cpuStatCentralMoment4[cpuStatPitch*tmp_whichBlockY + tmp_whichBlockX]);
+	printf("M5 = %.3f\n", cpuStatCentralMoment5[cpuStatPitch*tmp_whichBlockY + tmp_whichBlockX]);
+
+	// variance, skewness, and kurtosis
+	float cpuStatVariance[gpuBlockTotalX*gpuBlockTotalY];
+	float cpuStatSkewness[gpuBlockTotalX*gpuBlockTotalY];
+	float cpuStatKurtosis[gpuBlockTotalX*gpuBlockTotalY];
+	memset(cpuStatVariance, 0.0, gpuBlockTotalX*gpuBlockTotalY*sizeof(float));
+	memset(cpuStatSkewness, 0.0, gpuBlockTotalX*gpuBlockTotalY*sizeof(float));
+	memset(cpuStatKurtosis, 0.0, gpuBlockTotalX*gpuBlockTotalY*sizeof(float));
 	
+	// calculating variance, skewness and kurtosis
+	cpuCalcVarianceSkewnessKurtosis(cpuStatCentralMoment2, cpuStatCentralMoment3, cpuStatCentralMoment4, gpuBlockTotalX, gpuBlockTotalY, cpuStatPitch, cpuStatVariance, cpuStatSkewness, cpuStatKurtosis);
+	
+	printf("\n");
+	printf("variance = %.3f\n", cpuStatVariance[cpuStatPitch*tmp_whichBlockY + tmp_whichBlockX]);
+	printf("skewness = %.3f\n", cpuStatSkewness[cpuStatPitch*tmp_whichBlockY + tmp_whichBlockX]);
+	printf("kurtosis = %.3f\n", cpuStatKurtosis[cpuStatPitch*tmp_whichBlockY + tmp_whichBlockX]);
+
 	// ================================ GPU Histogram =================================
 	
 	// block sizes
