@@ -108,10 +108,7 @@ int main (int argc, char** argv){
 	processPseudoHistogram(cpuHist, gpuBlockTotalX, gpuBlockTotalY, cpuHistPitch, 256, tmp_whichBlockX, tmp_whichBlockY, false);
 	
 	
-	// =============================== CPU mean median max min ====================
-	
-	// histogram dimension, to process serialized 31x31 histogram
-	//dim3 hist_blockDim = dim3(gpuBlockTotalX,gpuBlockTotalY,256);
+	// =============================== CPU mean median max min  && central moments, skewness, kurtosis ====================
 	
 	// mean, median, max, min, serialized array
 	int cpuStatPitch = gpuBlockTotalX; // 31
@@ -119,24 +116,6 @@ int main (int argc, char** argv){
 	unsigned int cpuStatMedian[gpuBlockTotalX*gpuBlockTotalY];
 	unsigned int cpuStatMax[gpuBlockTotalX*gpuBlockTotalY];
 	unsigned int cpuStatMin[gpuBlockTotalX*gpuBlockTotalY];
-	
-	// calculating mean median max min
-	cudaEventRecord(start, 0);
-	//cpuCalcMeanMedianMaxMin(cpuHist, hist_blockDim, cpuHistPitch, cpuStatMean, cpuStatMedian, cpuStatMax, cpuStatMin);
-	cpuCalcMeanMedianMaxMin(cpuHist, gpuBlockTotalX, gpuBlockTotalY, cpuHistPitch, cpuStatMean, cpuStatMedian, cpuStatMax, cpuStatMin);
-	cudaEventRecord(stop, 0);
-	cudaEventSynchronize(stop);
-	
-	cudaEventElapsedTime(&time_cpuStatCalc, start, stop);
-	
-	printf("\nCPU mean median max min calculation took %.5f ms\n", time_cpuStatCalc);
-	printf("for block (%d, %d)\n", tmp_whichBlockX, tmp_whichBlockY);
-	printf("mean = %f\n", cpuStatMean[cpuStatPitch*tmp_whichBlockY + tmp_whichBlockX]);
-	printf("median = %d\n", cpuStatMedian[cpuStatPitch*tmp_whichBlockY + tmp_whichBlockX]);
-	printf("max = %d\n", cpuStatMax[cpuStatPitch*tmp_whichBlockY + tmp_whichBlockX]);
-	printf("min = %d\n", cpuStatMin[cpuStatPitch*tmp_whichBlockY + tmp_whichBlockX]);
-	
-	// =============================== CPU central moments ====================
 
 	// variables to hold central moments
 	float cpuStatCentralMoment2[gpuBlockTotalX*gpuBlockTotalY];
@@ -147,15 +126,6 @@ int main (int argc, char** argv){
 	memset(cpuStatCentralMoment3, 0.0, gpuBlockTotalX*gpuBlockTotalY*sizeof(float));
 	memset(cpuStatCentralMoment4, 0.0, gpuBlockTotalX*gpuBlockTotalY*sizeof(float));
 	memset(cpuStatCentralMoment5, 0.0, gpuBlockTotalX*gpuBlockTotalY*sizeof(float));
-	
-	// calculating moments
-	cpuCalcCentralMoments(cpuHist, gpuBlockTotalX, gpuBlockTotalY, cpuHistPitch, cpuStatMean, cpuStatPitch, (imgBlockSizeX*imgBlockSizeY), cpuStatCentralMoment2, cpuStatCentralMoment3, cpuStatCentralMoment4, cpuStatCentralMoment5);
-	
-	printf("\nCentral Moments\n");
-	printf("M2 = %.3f\n", cpuStatCentralMoment2[cpuStatPitch*tmp_whichBlockY + tmp_whichBlockX]);
-	printf("M3 = %.3f\n", cpuStatCentralMoment3[cpuStatPitch*tmp_whichBlockY + tmp_whichBlockX]);
-	printf("M4 = %.3f\n", cpuStatCentralMoment4[cpuStatPitch*tmp_whichBlockY + tmp_whichBlockX]);
-	printf("M5 = %.3f\n", cpuStatCentralMoment5[cpuStatPitch*tmp_whichBlockY + tmp_whichBlockX]);
 
 	// variance, skewness, and kurtosis
 	float cpuStatVariance[gpuBlockTotalX*gpuBlockTotalY];
@@ -164,9 +134,36 @@ int main (int argc, char** argv){
 	memset(cpuStatVariance, 0.0, gpuBlockTotalX*gpuBlockTotalY*sizeof(float));
 	memset(cpuStatSkewness, 0.0, gpuBlockTotalX*gpuBlockTotalY*sizeof(float));
 	memset(cpuStatKurtosis, 0.0, gpuBlockTotalX*gpuBlockTotalY*sizeof(float));
+
+	// timer start
+	cudaEventRecord(start, 0);
+	
+	// calculating mean median max min
+	cpuCalcMeanMedianMaxMin(cpuHist, gpuBlockTotalX, gpuBlockTotalY, cpuHistPitch, cpuStatMean, cpuStatMedian, cpuStatMax, cpuStatMin);
+
+	// calculating moments
+	cpuCalcCentralMoments(cpuHist, gpuBlockTotalX, gpuBlockTotalY, cpuHistPitch, cpuStatMean, cpuStatPitch, (imgBlockSizeX*imgBlockSizeY), cpuStatCentralMoment2, cpuStatCentralMoment3, cpuStatCentralMoment4, cpuStatCentralMoment5);
 	
 	// calculating variance, skewness and kurtosis
 	cpuCalcVarianceSkewnessKurtosis(cpuStatCentralMoment2, cpuStatCentralMoment3, cpuStatCentralMoment4, gpuBlockTotalX, gpuBlockTotalY, cpuStatPitch, cpuStatVariance, cpuStatSkewness, cpuStatKurtosis);
+
+	// timer stop & calculate elapsed time
+	cudaEventRecord(stop, 0);
+	cudaEventSynchronize(stop);
+	cudaEventElapsedTime(&time_cpuStatCalc, start, stop);
+	
+	printf("\nCPU statistical calculation took %.5f ms\n", time_cpuStatCalc);
+	printf("for block (%d, %d)\n", tmp_whichBlockX, tmp_whichBlockY);
+	printf("mean = %f\n", cpuStatMean[cpuStatPitch*tmp_whichBlockY + tmp_whichBlockX]);
+	printf("median = %d\n", cpuStatMedian[cpuStatPitch*tmp_whichBlockY + tmp_whichBlockX]);
+	printf("max = %d\n", cpuStatMax[cpuStatPitch*tmp_whichBlockY + tmp_whichBlockX]);
+	printf("min = %d\n", cpuStatMin[cpuStatPitch*tmp_whichBlockY + tmp_whichBlockX]);
+	
+	printf("\nCentral Moments\n");
+	printf("M2 = %.3f\n", cpuStatCentralMoment2[cpuStatPitch*tmp_whichBlockY + tmp_whichBlockX]);
+	printf("M3 = %.3f\n", cpuStatCentralMoment3[cpuStatPitch*tmp_whichBlockY + tmp_whichBlockX]);
+	printf("M4 = %.3f\n", cpuStatCentralMoment4[cpuStatPitch*tmp_whichBlockY + tmp_whichBlockX]);
+	printf("M5 = %.3f\n", cpuStatCentralMoment5[cpuStatPitch*tmp_whichBlockY + tmp_whichBlockX]);
 	
 	printf("\n");
 	printf("variance = %.3f\n", cpuStatVariance[cpuStatPitch*tmp_whichBlockY + tmp_whichBlockX]);
@@ -251,7 +248,7 @@ int main (int argc, char** argv){
 	gpuErrChk( cudaMalloc(&dev_statMin, statArraySize * sizeof(unsigned int)) );
 	
 	// copy old histogram to new
-	//TODO: try cudaMemcpyHostToHost!
+	//TODO: try cudaMemcpyHostToHost! --> seg fault
 	gpuErrChk( cudaMemcpy(dev_hist2stat, host_hist2, size_hist2, cudaMemcpyHostToDevice) );
 	
 	// initialization
